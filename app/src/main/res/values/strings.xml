@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ImageLinearizer</string>
+    <string name="advanced">Advanced</string>
+    <string name="src_cam_hfovdeg_label">Fisheye HFoV</string>
+    <string name="src_cam_focallength_label">Fisheye focal length</string>
+    <string name="src_cam_opticalcenterx_label">Fisheye optical center X</string>
+    <string name="src_cam_opticalcentery_label">Fisheye optical center Y</string>
+    <string name="dst_cam_hfovdeg_label">Linear HFoV</string>
+    <string name="dst_cam_imgsize_label">Linear image size:</string>
+</resources>

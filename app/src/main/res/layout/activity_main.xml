@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:layout_width="0px"
+        android:layout_height="0px"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent" />
+
+    <com.krisstof.imagelinearizer.ImageTransformerView
+        android:id="@+id/imageTransformerViewDstCam"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+    <ImageView
+        android:id="@+id/imageViewSrcCam"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:scaleType="fitXY"
+        android:background="@drawable/imageview_srccam_background"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/linearLayoutInputPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#70000000"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent">
+
+        <TextView
+            android:id="@+id/textViewSrcCamHfovDeg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/src_cam_hfovdeg_label"
+            android:textColor="@color/colorAccent" />
+
+        <SeekBar
+            android:id="@+id/seekBarSrcCamHfovDeg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="3600" />
+
+        <TextView
+            android:id="@+id/textViewSrcCamFocalLength"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/src_cam_focallength_label"
+            android:textColor="@color/colorAccent" />
+
+        <SeekBar
+            android:id="@+id/seekBarSrcCamFocalLength"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="700" />
+
+        <TextView
+            android:id="@+id/textViewSrcCamOpticalCenterX"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/src_cam_opticalcenterx_label"
+            android:textColor="@color/colorAccent"
+            android:visibility="gone" />
+
+        <SeekBar
+            android:id="@+id/seekBarSrcCamOpticalCenterX"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/textViewSrcCamOpticalCenterY"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/src_cam_opticalcentery_label"
+            android:textColor="@color/colorAccent"
+            android:visibility="gone" />
+
+        <SeekBar
+            android:id="@+id/seekBarSrcCamOpticalCenterY"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/textViewDstCamHfovDeg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/dst_cam_hfovdeg_label"
+            android:textColor="@color/colorAccent" />
+
+        <SeekBar
+            android:id="@+id/seekBarDstCamHfovDeg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="1700" />
+
+        <LinearLayout
+            android:id="@+id/linearLayoutDstCamImgSizePx"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="visible">
+
+            <TextView
+                android:id="@+id/textViewDstCamImgSizePx"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/dst_cam_imgsize_label"
+                android:textColor="@color/colorAccent" />
+
+            <EditText
+                android:id="@+id/editTextDstCamImgSizePxX"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:textColor="@color/colorAccent" />
+
+            <TextView
+                android:id="@+id/textViewDstCamImgSizePxSeparator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="x"
+                android:textColor="@color/colorAccent" />
+
+            <EditText
+                android:id="@+id/editTextDstCamImgSizePxY"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:textColor="@color/colorAccent" />
+
+            <TextView
+                android:id="@+id/textViewDstCamImgSizePxUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="px"
+                android:textColor="@color/colorAccent" />
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
