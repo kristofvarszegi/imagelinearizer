@@ -1,3 +1,12 @@
+/*
+ * TODO
+ * - Check warped image against GT output image
+ * - Check loaded image against GT output image
+ * - Check saved image against GT output image
+ * - Check enforcement of max output image size field limits
+ * - Check UI elements' visibility according to release config
+ *
+ */
 package com.krisstof.imagelinearizer;
 
 import android.content.Context;

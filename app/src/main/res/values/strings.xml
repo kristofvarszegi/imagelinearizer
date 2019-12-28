@@ -7,4 +7,6 @@
     <string name="src_cam_opticalcentery_label">Fisheye optical center Y</string>
     <string name="dst_cam_hfovdeg_label">Linear HFoV</string>
     <string name="dst_cam_imgsize_label">Linear image size:</string>
+    <string name="image_view_src_cam">Source camera image</string>
+    <string name="px">px</string>
 </resources>

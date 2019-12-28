@@ -7,14 +7,6 @@
     android:background="@color/black"
     tools:context=".MainActivity">
 
-    <LinearLayout
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:layout_width="0px"
-        android:layout_height="0px"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent" />
-
     <com.krisstof.imagelinearizer.ImageTransformerView
         android:id="@+id/imageTransformerViewDstCam"
         android:layout_width="match_parent"
@@ -23,6 +15,7 @@
         app:layout_constraintTop_toTopOf="parent" />
     <ImageView
         android:id="@+id/imageViewSrcCam"
+        android:contentDescription="@string/image_view_src_cam"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
@@ -135,7 +128,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
-                android:textColor="@color/colorAccent" />
+                android:textColor="@color/colorAccent"
+                tools:ignore="Autofill" />
 
             <TextView
                 android:id="@+id/textViewDstCamImgSizePxSeparator"
@@ -150,14 +144,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
-                android:textColor="@color/colorAccent" />
+                android:textColor="@color/colorAccent"
+                tools:ignore="Autofill" />
 
             <TextView
                 android:id="@+id/textViewDstCamImgSizePxUnit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="px"
+                android:text="@string/px"
                 android:textColor="@color/colorAccent" />
         </LinearLayout>
     </LinearLayout>
