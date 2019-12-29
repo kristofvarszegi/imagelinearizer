@@ -1,12 +1,19 @@
 <resources>
     <string name="app_name">ImageLinearizer</string>
     <string name="advanced">Advanced</string>
-    <string name="src_cam_hfovdeg_label">Fisheye HFoV</string>
-    <string name="src_cam_focallength_label">Fisheye focal length</string>
-    <string name="src_cam_opticalcenterx_label">Fisheye optical center X</string>
-    <string name="src_cam_opticalcentery_label">Fisheye optical center Y</string>
-    <string name="dst_cam_hfovdeg_label">Linear HFoV</string>
-    <string name="dst_cam_imgsize_label">Linear image size:</string>
-    <string name="image_view_src_cam">Source camera image</string>
+    <string name="src_cam_characteristics">Fish-eye camera\'s characteristics</string>
+    <string name="src_cam_hfovdeg_label">Horizontal angle of view</string>
+    <string name="src_cam_focaloffset_label">Focal offset</string>
+    <string name="src_cam_principalpointx_label">Optical center X (in pixels)</string>
+    <string name="src_cam_principalpointy_label">Optical center Y (in pixels)</string>
+    <string name="dst_cam_characteristics">Desired linear camera\'s characteristics</string>
+    <string name="dst_cam_hfovdeg_label">Horizontal angle of view</string>
+    <string name="dst_cam_imgsize_label">Image size: </string>
+    <string name="src_cam_title">Sample fish-eye camera image</string>
+    <string name="image_view_src_cam">Fish-eye camera image</string>
+    <string name="image_view_dst_cam">Linear camera image</string>
     <string name="px">px</string>
+    <string name="x">x</string>
+    <string name="y">y</string>
+    <string name="buy_pro_for_high_resolution">Buy the Pro version for saving high resolution images;) (Coming soon)</string>
 </resources>

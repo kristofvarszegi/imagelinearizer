@@ -7,31 +7,61 @@
     android:background="@color/black"
     tools:context=".MainActivity">
 
-    <com.krisstof.imagelinearizer.ImageTransformerView
-        android:id="@+id/imageTransformerViewDstCam"
+    <ImageView
+        android:id="@+id/imageViewDstCam"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@drawable/camview_background"
+        android:contentDescription="@string/image_view_dst_cam"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-    <ImageView
-        android:id="@+id/imageViewSrcCam"
-        android:contentDescription="@string/image_view_src_cam"
+
+    <LinearLayout
+        android:id="@+id/linearLayoutSrcCamView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:scaleType="fitXY"
-        android:background="@drawable/imageview_srccam_background"
+        android:background="@drawable/camview_background"
+        android:orientation="vertical"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/textViewSrcCamTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/src_cam_title"
+            android:textColor="@color/colorAccent"
+            android:textSize="8sp" />
+
+        <ImageView
+            android:id="@+id/imageViewSrcCam"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/image_view_src_cam"
+            android:scaleType="fitXY" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/linearLayoutInputPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#70000000"
+        android:background="@drawable/caminputpanel_background"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent">
+
+        <TextView
+            android:id="@+id/textViewSrcCamInputPanelTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimary"
+            android:gravity="center"
+            android:text="@string/src_cam_characteristics"
+            android:textColor="@color/colorAccent" />
 
         <TextView
             android:id="@+id/textViewSrcCamHfovDeg"
@@ -39,7 +69,8 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/src_cam_hfovdeg_label"
-            android:textColor="@color/colorAccent" />
+            android:textColor="@color/colorAccent"
+            android:textSize="12sp" />
 
         <SeekBar
             android:id="@+id/seekBarSrcCamHfovDeg"
@@ -48,50 +79,67 @@
             android:max="3600" />
 
         <TextView
-            android:id="@+id/textViewSrcCamFocalLength"
+            android:id="@+id/textViewSrcCamFocalOffset"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="@string/src_cam_focallength_label"
-            android:textColor="@color/colorAccent" />
+            android:text="@string/src_cam_focaloffset_label"
+            android:textColor="@color/colorAccent"
+            android:textSize="12sp" />
 
         <SeekBar
-            android:id="@+id/seekBarSrcCamFocalLength"
+            android:id="@+id/seekBarSrcCamFocalOffset"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:max="700" />
 
         <TextView
-            android:id="@+id/textViewSrcCamOpticalCenterX"
+            android:id="@+id/textViewSrcCamPrincipalPointX"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="@string/src_cam_opticalcenterx_label"
+            android:text="@string/src_cam_principalpointx_label"
             android:textColor="@color/colorAccent"
+            android:textSize="12sp"
             android:visibility="gone" />
 
         <SeekBar
-            android:id="@+id/seekBarSrcCamOpticalCenterX"
+            android:id="@+id/seekBarSrcCamPrincipalPointX"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:max="100"
             android:visibility="gone" />
 
         <TextView
-            android:id="@+id/textViewSrcCamOpticalCenterY"
+            android:id="@+id/textViewSrcCamPrincipalPointY"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="@string/src_cam_opticalcentery_label"
+            android:text="@string/src_cam_principalpointy_label"
             android:textColor="@color/colorAccent"
+            android:textSize="12sp"
             android:visibility="gone" />
 
         <SeekBar
-            android:id="@+id/seekBarSrcCamOpticalCenterY"
+            android:id="@+id/seekBarSrcCamPrincipalPointY"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:max="100"
             android:visibility="gone" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorPrimaryDark" />
+
+        <TextView
+            android:id="@+id/textViewDstCamInputPanelTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimary"
+            android:gravity="center"
+            android:text="@string/dst_cam_characteristics"
+            android:textColor="@color/colorAccent" />
 
         <TextView
             android:id="@+id/textViewDstCamHfovDeg"
@@ -99,7 +147,8 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/dst_cam_hfovdeg_label"
-            android:textColor="@color/colorAccent" />
+            android:textColor="@color/colorAccent"
+            android:textSize="12sp" />
 
         <SeekBar
             android:id="@+id/seekBarDstCamHfovDeg"
@@ -108,7 +157,7 @@
             android:max="1700" />
 
         <LinearLayout
-            android:id="@+id/linearLayoutDstCamImgSizePx"
+            android:id="@+id/linearLayoutDstImageSizePx"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
@@ -116,44 +165,49 @@
             android:visibility="visible">
 
             <TextView
-                android:id="@+id/textViewDstCamImgSizePx"
+                android:id="@+id/textViewDstImageSizePx"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/dst_cam_imgsize_label"
-                android:textColor="@color/colorAccent" />
+                android:textColor="@color/colorAccent"
+                android:textSize="12sp" />
 
             <EditText
-                android:id="@+id/editTextDstCamImgSizePxX"
+                android:id="@+id/editTextDstImageWidthPx"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
                 android:textColor="@color/colorAccent"
+                android:textSize="12sp"
                 tools:ignore="Autofill" />
 
             <TextView
-                android:id="@+id/textViewDstCamImgSizePxSeparator"
+                android:id="@+id/textViewDstImageSizePxSeparator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="x"
-                android:textColor="@color/colorAccent" />
+                android:text="@string/x"
+                android:textColor="@color/colorAccent"
+                android:textSize="12sp" />
 
             <EditText
-                android:id="@+id/editTextDstCamImgSizePxY"
+                android:id="@+id/editTextDstImageHeightPx"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
                 android:textColor="@color/colorAccent"
+                android:textSize="12sp"
                 tools:ignore="Autofill" />
 
             <TextView
-                android:id="@+id/textViewDstCamImgSizePxUnit"
+                android:id="@+id/textViewDstImageSizePxUnit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/px"
-                android:textColor="@color/colorAccent" />
+                android:textColor="@color/colorAccent"
+                android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
 

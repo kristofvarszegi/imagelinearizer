@@ -1,7 +1,11 @@
 /*
  * TODO
- * - Check warped image against GT output image
- * - Check loaded image against GT output image
+ * - Check max sized image
+ * - Check dst image size X field
+ * - Check dst image size Y field
+ * - Check 3 warped images against GT output image
+ * - Check loaded images against GT output image
+ * - Check if saved image appears as latest in Gallery
  * - Check saved image against GT output image
  * - Check enforcement of max output image size field limits
  * - Check UI elements' visibility according to release config
@@ -25,7 +29,7 @@ import static org.junit.Assert.*;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
-public class ExampleInstrumentedTest {
+public class ImageLinearizerInstrumentedTest {
     @Test
     public void useAppContext() {
         // Context of the app under test.
