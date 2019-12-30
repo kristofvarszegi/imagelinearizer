@@ -220,11 +220,32 @@
             android:textSize="12sp" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/textViewOtherTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimaryDark"
+        android:gravity="center"
+        android:text="@string/other"
+        android:textColor="@android:color/white" />
+
     <Switch
         android:id="@+id/switchAdvancedParameters"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimaryDark"
         android:text="@string/advancedparametersswitch"
+        android:textColor="@android:color/white" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorPrimaryDark" />
+
+    <Switch
+        android:id="@+id/switchDstImageGridOverlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="@string/dstimagegridoverlayswitch"
         android:textColor="@android:color/white" />
 </LinearLayout>

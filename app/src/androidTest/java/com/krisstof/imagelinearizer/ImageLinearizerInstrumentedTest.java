@@ -1,5 +1,6 @@
 /*
  * TODO
+ * - Check small image
  * - Check max sized image
  * - Check pp offsetted image
  * - Check dst image size X field

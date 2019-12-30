@@ -13,11 +13,13 @@
     <string name="dst_cam_hfovdeg_label">Horizontal angle of view</string>
     <string name="dst_cam_imgsize_label">Image size:&#032;</string>
     <string name="advancedparametersswitch">Advanced parameters</string>
+    <string name="dstimagegridoverlayswitch">Grid overlay</string>
     <string name="src_cam_title">Sample fish-eye camera image</string>
     <string name="image_view_src_cam">Fish-eye camera image</string>
     <string name="image_view_dst_cam">Linear camera image</string>
     <string name="px">px</string>
     <string name="x">x</string>
     <string name="y">y</string>
+    <string name="other">Other</string>
     <string name="buy_pro_for_high_resolution">Buy the Pro version for saving high resolution images;) (Coming soon)</string>
 </resources>

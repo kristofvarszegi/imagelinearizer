@@ -1,9 +1,7 @@
 /*
  * TODO
  * - Measure hfovs
- * - Panoramizer
  * - Rotate dst camera
- * - Grid with on/off
  * - Check for updates and update
  * - Help
  * - Tests
@@ -31,6 +29,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -77,6 +76,9 @@ public class MainActivity extends AppCompatActivity {
   private static final float SRCCAM_FOCALLENGTH_MAX = 4.0f;
   private static final float DSTCAM_HFOVDEG_MAX = 170.0f;
   private static final int PRINCIPALPOINT_SEEKBAR_DECIMALS = 2;
+  private static final int GRIDOVERLAY_SMALLCELLSIZE_PX = 90;
+  private static final int GRIDOVERLAY_LARGECELLSIZE_PX = 180;
+  //private static final int GRIDOVERLAY_COLOR = Color.argb(127, 255, 255, 255);
 
   private static final int MAX_IMAGE_WIDTH_PX = 7680;
   private static final int MAX_IMAGE_HEIGHT_PX = MAX_IMAGE_WIDTH_PX;
@@ -84,9 +86,11 @@ public class MainActivity extends AppCompatActivity {
   private static final String FLOAT_FORMAT_STR = "%.2f";
 
   enum RELEASE_TYPE {FREE, PRO}
+
   private static final class ReleaseConfig {
     RELEASE_TYPE releaseType;
     int[] maxSavedImageSizePx;
+
     ReleaseConfig(RELEASE_TYPE releaseType, final int[] maxSavedImageSizePx) {
       if (maxSavedImageSizePx.length != 2) {
         throw new IllegalArgumentException("Max. image size must have 2 elements but it has "
@@ -96,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
       this.maxSavedImageSizePx = new int[]{maxSavedImageSizePx[0], maxSavedImageSizePx[1]};
     }
   }
+
   private static final ReleaseConfig FREE_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.FREE,
       new int[]{320, 180});
   private static final ReleaseConfig PRO_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.PRO,
@@ -326,6 +331,7 @@ public class MainActivity extends AppCompatActivity {
             mContext);
         updateImages();
       }
+
       @Override
       public void onNothingSelected(AdapterView<?> parentView) {
       }
@@ -425,9 +431,18 @@ public class MainActivity extends AppCompatActivity {
         new CompoundButton.OnCheckedChangeListener() {
           @Override
           public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-              updateCameraParametersPanel(isChecked);
+            updateCameraParametersPanel(isChecked);
           }
-      });
+        });
+
+    Switch switchDstImageGridOverlay = findViewById(R.id.switchDstImageGridOverlay);
+    switchDstImageGridOverlay.setOnCheckedChangeListener(
+        new CompoundButton.OnCheckedChangeListener() {
+          @Override
+          public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            updateImages();
+          }
+        });
   }
 
   private void adjustViewsToLandscapeOrientation() {
@@ -483,7 +498,7 @@ public class MainActivity extends AppCompatActivity {
           } else {
             imageFileSupported = false;
             Toast.makeText(this, "Image file extension \'" + srcImageExtension
-                    + "\" is not supported", Toast.LENGTH_LONG).show();
+                + "\" is not supported", Toast.LENGTH_LONG).show();
           }
         }
         if (imageFileSupported) {
@@ -599,7 +614,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     mDstImage = mImageTransformer.linearize(mSrcImage, mSrcCamParameters, mDstCamParameters);
-    mDstCamView.setImageBitmap(mDstImage);
+
+    if (((Switch) findViewById(R.id.switchDstImageGridOverlay)).isChecked()) {
+      int cellSizePx = GRIDOVERLAY_SMALLCELLSIZE_PX;
+      if (mDstImage.getWidth() > DstCamParameters.DEFAULT_IMAGEWIDTH_PX
+          || mDstImage.getHeight() > DstCamParameters.DEFAULT_IMAGEHEIGHT_PX) {
+        cellSizePx = GRIDOVERLAY_LARGECELLSIZE_PX;
+      }
+      mDstCamView.setImageBitmap(Utils.overlayGridOnImage(mDstImage, cellSizePx,
+          getResources().getColor(R.color.colorAccent)));
+          //GRIDOVERLAY_COLOR));
+    } else {
+      mDstCamView.setImageBitmap(mDstImage);
+    }
   }
 
   static float seekBarScaleToValueScale(final SeekBar seekBar, int progress, float valueMax) {
