@@ -6,6 +6,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -125,38 +126,42 @@ abstract class Utils {
     return filepath;
   }
 
-  static Bitmap overlayGridOnImage(final Bitmap image, int cellSizePx, int color) {
-    Bitmap imageWithOverlay = image.copy(image.getConfig(), true);
-    Canvas canvas = new Canvas(imageWithOverlay);
+  static Bitmap createGridOverlayImage(int imageWidthPx, int imageHeightPx, int cellSizePx,
+                                       float lineWidthPx, int centerColor, int nonCenterColor) {
+    Bitmap gridOverlayImage = Bitmap.createBitmap(imageWidthPx, imageHeightPx,
+        Bitmap.Config.ARGB_8888);
+    gridOverlayImage.eraseColor(Color.argb(0, 0, 0, 0));
+    Canvas canvas = new Canvas(gridOverlayImage);
     Paint gridLinesPaint = new Paint();
-    gridLinesPaint.setColor(color);
+    gridLinesPaint.setColor(centerColor);
     gridLinesPaint.setStyle(Paint.Style.STROKE);
-    gridLinesPaint.setStrokeWidth(2.f);
+    gridLinesPaint.setStrokeWidth(lineWidthPx);
     gridLinesPaint.setAntiAlias(true);
-    canvas.drawLine(image.getWidth() / 2, 0, image.getWidth() / 2,
-        image.getHeight(), gridLinesPaint);
-    canvas.drawLine(0, image.getHeight() / 2, image.getWidth(), image.getHeight() / 2,
-        gridLinesPaint);
-    for (int i = 1; i <= (image.getWidth() / 2) / cellSizePx; ++i) {
-      final float xL1 = image.getWidth() / 2.f - i * cellSizePx;
-      if (xL1 >= 0.f && xL1 < (float) image.getWidth()) {
-        canvas.drawLine(xL1, 0, xL1, image.getHeight(), gridLinesPaint);
+    canvas.drawLine(gridOverlayImage.getWidth() / 2, 0, gridOverlayImage.getWidth() / 2,
+        gridOverlayImage.getHeight(), gridLinesPaint);
+    canvas.drawLine(0, gridOverlayImage.getHeight() / 2, gridOverlayImage.getWidth(),
+        gridOverlayImage.getHeight() / 2, gridLinesPaint);
+    gridLinesPaint.setColor(nonCenterColor);
+    for (int i = 1; i <= (gridOverlayImage.getWidth() / 2) / cellSizePx; ++i) {
+      final float xL1 = gridOverlayImage.getWidth() / 2.f - i * cellSizePx;
+      if (xL1 >= 0.f && xL1 < (float) gridOverlayImage.getWidth()) {
+        canvas.drawLine(xL1, 0, xL1, gridOverlayImage.getHeight(), gridLinesPaint);
       }
-      final float xL2 = image.getWidth() / 2.f + i * cellSizePx;
-      if (xL2 >= 0.f && xL2 < (float) image.getWidth()) {
-        canvas.drawLine(xL2, 0, xL2, image.getHeight(), gridLinesPaint);
-      }
-    }
-    for (int i = 1; i <= (image.getHeight() / 2) / cellSizePx; ++i) {
-      final float yL1 = image.getHeight() / 2.f - i * cellSizePx;
-      if (yL1 >= 0.f && yL1 < (float) image.getHeight()) {
-        canvas.drawLine(0, yL1, image.getWidth(), yL1, gridLinesPaint);
-      }
-      final float yL2 = image.getHeight() / 2.f + i * cellSizePx;
-      if (yL2 >= 0.f && yL2 < (float) image.getHeight()) {
-        canvas.drawLine(0, yL2, image.getWidth(), yL2, gridLinesPaint);
+      final float xL2 = gridOverlayImage.getWidth() / 2.f + i * cellSizePx;
+      if (xL2 >= 0.f && xL2 < (float) gridOverlayImage.getWidth()) {
+        canvas.drawLine(xL2, 0, xL2, gridOverlayImage.getHeight(), gridLinesPaint);
       }
     }
-    return imageWithOverlay;
+    for (int i = 1; i <= (gridOverlayImage.getHeight() / 2) / cellSizePx; ++i) {
+      final float yL1 = gridOverlayImage.getHeight() / 2.f - i * cellSizePx;
+      if (yL1 >= 0.f && yL1 < (float) gridOverlayImage.getHeight()) {
+        canvas.drawLine(0, yL1, gridOverlayImage.getWidth(), yL1, gridLinesPaint);
+      }
+      final float yL2 = gridOverlayImage.getHeight() / 2.f + i * cellSizePx;
+      if (yL2 >= 0.f && yL2 < (float) gridOverlayImage.getHeight()) {
+        canvas.drawLine(0, yL2, gridOverlayImage.getWidth(), yL2, gridLinesPaint);
+      }
+    }
+    return gridOverlayImage;
   }
 }

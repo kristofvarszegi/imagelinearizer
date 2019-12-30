@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/darker_gray"
+    android:background="@android:color/black"
     tools:context=".MainActivity">
 
     <ImageView
@@ -12,7 +12,19 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:background="@drawable/camview_background"
-        android:contentDescription="@string/image_view_dst_cam"
+        android:contentDescription="@string/imageview_dstcam"
+        android:gravity="end"
+        android:scaleType="fitXY"
+        android:adjustViewBounds="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+    <ImageView
+        android:id="@+id/imageViewDstCamOverlay"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:contentDescription="@string/imageview_dstcam_overlay"
         android:gravity="end"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -31,27 +43,31 @@
             android:id="@+id/textViewSrcCamTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/colorPrimaryDark"
             android:gravity="center"
             android:text="@string/src_cam_title"
             android:textColor="@android:color/white"
             android:textSize="8sp" />
-
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorPrimaryDark" />
         <ImageView
             android:id="@+id/imageViewSrcCam"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:adjustViewBounds="true"
             android:background="@drawable/camview_background"
-            android:contentDescription="@string/image_view_src_cam"
+            android:contentDescription="@string/imageview_srccam"
             android:gravity="right"
             android:scaleType="fitXY" />
     </LinearLayout>
 
     <include
+        layout="@layout/camera_parameters_panel"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        layout="@layout/camera_parameters_panel" />
+        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

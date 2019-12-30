@@ -2,4 +2,10 @@
 <resources>
     <integer name="seekbar_srccam_hfovdeg_max" >2350</integer>
     <integer name="seekbar_srccam_focaloffset_max" >400</integer>
+    <!--<integer name="seekbar_dstcam_xrotdeg_min" >0</integer>-->
+    <integer name="seekbar_dstcam_xrotdeg_max" >1800</integer>
+    <!--<integer name="seekbar_dstcam_yrotdeg_min" >0</integer>-->
+    <integer name="seekbar_dstcam_yrotdeg_max" >1800</integer>
+    <!--<integer name="seekbar_dstcam_zrotdeg_min" >0</integer>-->
+    <integer name="seekbar_dstcam_zrotdeg_max" >1800</integer>
 </resources>

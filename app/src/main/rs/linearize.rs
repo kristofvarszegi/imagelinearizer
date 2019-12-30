@@ -12,6 +12,9 @@ int dstCamGeometryId;
 float dstCamHfovDeg;
 int dstImageWidthPx;
 int dstImageHeightPx;
+float dstCamXRotDeg;
+float dstCamYRotDeg;
+float dstCamZRotDeg;
 
 static float3 pinholeImageSpaceToCameraSpace(float2 dstImagePoint) {
   float3 camSpaceVec;
@@ -33,6 +36,34 @@ static float3 equirectangularImageSpaceToCameraSpace(float2 dstImagePoint) {
   camSpaceVec.z = cos(verticalAngleRad) * cos(horizontalAngleRad);
   //camSpaceVec.z = sqrt(1.f - (camSpaceVec.x * camSpaceVec.x + camSpaceVec.y * camSpaceVec.y));
   return normalize(camSpaceVec);
+}
+
+static float3 rotateCamSpaceVec(float3 camSpaceVec, float xRotDeg, float yRotDeg, float zRotDeg) {
+  //rs_matrix3x3 hRotMat;
+  //rsMatrixLoadIdentity(&hRotMat);
+  //rsMatrixLoadRotate(&hRotMat, hRotDeg, 0.f, -1.f, 0.f);  // Crashes
+  //rsMatrixRotate(&hRotMat, hRotDeg, 0.f, -1.f, 0.f);
+  //const float3 hRotatedCamSpaceVec = rsMatrixMultiply(&hRotMat, camSpaceVec);
+  //rs_matrix3x3 vRotMat;
+  //rsMatrixLoadRotate(&vRotMat, vRotDeg, 1.f, 1.f, 0.f);
+  //const float3 hVRotatedCamSpaceVec = rsMatrixMultiply(&vRotMat, hRotatedCamSpaceVec);
+
+  const float xRotRad = radians(xRotDeg);
+  float3 xRotatedCamSpaceVec;
+  xRotatedCamSpaceVec.x = camSpaceVec.x;
+  xRotatedCamSpaceVec.y = cos(xRotRad) * camSpaceVec.y - sin(xRotRad) * camSpaceVec.z;
+  xRotatedCamSpaceVec.z = sin(xRotRad) * camSpaceVec.y + cos(xRotRad) * camSpaceVec.z;
+  const float yRotRad = radians(yRotDeg);
+  float3 xYRotatedCamSpaceVec;
+  xYRotatedCamSpaceVec.x = cos(yRotRad) * xRotatedCamSpaceVec.x - sin(yRotRad) * xRotatedCamSpaceVec.z;
+  xYRotatedCamSpaceVec.y = xRotatedCamSpaceVec.y;
+  xYRotatedCamSpaceVec.z = sin(yRotRad) * xRotatedCamSpaceVec.x + cos(yRotRad) * xRotatedCamSpaceVec.z;
+  const float zRotRad = radians(zRotDeg);
+  float3 xYZRotatedCamSpaceVec;
+  xYZRotatedCamSpaceVec.x = cos(zRotRad) * xYRotatedCamSpaceVec.x - sin(zRotRad) * xYRotatedCamSpaceVec.y;
+  xYZRotatedCamSpaceVec.y = sin(zRotRad) * xYRotatedCamSpaceVec.x + cos(zRotRad) * xYRotatedCamSpaceVec.y;
+  xYZRotatedCamSpaceVec.z = xYRotatedCamSpaceVec.z;
+  return xYZRotatedCamSpaceVec;
 }
 
 static float2 fisheyeCameraSpaceToImageSpace(float3 camSpaceVec) {
@@ -69,7 +100,8 @@ uchar4 __attribute__((kernel)) linearize(uint32_t x, uint32_t y) {
       camSpaceVec = equirectangularImageSpaceToCameraSpace(dstImagePoint);
       break;
   }
-  const float2 srcImagePoint = fisheyeCameraSpaceToImageSpace(camSpaceVec);
+  const float2 srcImagePoint = fisheyeCameraSpaceToImageSpace(
+      rotateCamSpaceVec(camSpaceVec, dstCamXRotDeg, dstCamYRotDeg, dstCamZRotDeg));
   //const float2 srcImagePoint = pinholeToFisheye(dstImagePoint);
   int2 srcImagePointPx;
   srcImagePointPx.x = round(srcImagePoint.x);

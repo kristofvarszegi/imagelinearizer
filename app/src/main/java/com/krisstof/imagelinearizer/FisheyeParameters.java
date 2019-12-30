@@ -62,7 +62,7 @@ final class FisheyeParameters {
         principalPointYPx = 2607.f / 2.f;
         break;
       case R.drawable.librarytable_195deg_3960x2640:
-        hfovDeg = 230.f;
+        hfovDeg = 189.5f;
         focalOffset = 1.5f;
         principalPointXPx = 3960.f / 2.f;
         principalPointYPx = 2640.f / 2.f;

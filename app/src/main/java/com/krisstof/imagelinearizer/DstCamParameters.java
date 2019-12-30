@@ -9,19 +9,27 @@ final class DstCamParameters {
   CAMERA_GEOMETRY geometry;
   float hfovDeg;
   int imageWidthPx, imageHeightPx;
+  float yRotDeg, xRotDeg, zRotDeg;
 
   DstCamParameters() {
-    this.geometry = CAMERA_GEOMETRY.PINHOLE;
-    this.hfovDeg = 150.f;
-    this.imageWidthPx = DEFAULT_IMAGEWIDTH_PX;
-    this.imageHeightPx = DEFAULT_IMAGEHEIGHT_PX;
+    geometry = CAMERA_GEOMETRY.PINHOLE;
+    hfovDeg = 150.f;
+    imageWidthPx = DEFAULT_IMAGEWIDTH_PX;
+    imageHeightPx = DEFAULT_IMAGEHEIGHT_PX;
+    xRotDeg = 0.f;
+    yRotDeg = 0.f;
+    zRotDeg = 0.f;
   }
 
-  DstCamParameters(CAMERA_GEOMETRY geometry, float hfovDeg, int imageWidthPx, int imageHeightPx) {
+  DstCamParameters(CAMERA_GEOMETRY geometry, float hfovDeg, int imageWidthPx, int imageHeightPx,
+                   float xRotDeg, float yRotDeg, float zRotDeg) {
     this.geometry = geometry;
     this.hfovDeg = hfovDeg;
     this.imageWidthPx = imageWidthPx;
     this.imageHeightPx = imageHeightPx;
+    this.xRotDeg = xRotDeg;
+    this.yRotDeg = yRotDeg;
+    this.zRotDeg = zRotDeg;
   }
 
   int getGeometryId() {
