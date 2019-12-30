@@ -11,8 +11,9 @@
         android:id="@+id/imageViewDstCam"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:contentDescription="@string/image_view_dst_cam"
         android:background="@drawable/camview_background"
+        android:contentDescription="@string/image_view_dst_cam"
+        android:gravity="right"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -32,7 +33,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/src_cam_title"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/white"
             android:textSize="8sp" />
 
         <ImageView
@@ -40,15 +41,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:adjustViewBounds="true"
+            android:background="@drawable/camview_background"
             android:contentDescription="@string/image_view_src_cam"
+            android:gravity="right"
             android:scaleType="fitXY" />
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/linearLayoutInputPanel"
+        android:id="@+id/linearLayoutCameraParameters"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:background="@drawable/caminputpanel_background"
+        android:background="@drawable/cameraparameterspanel_background"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -56,13 +59,13 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
-            android:id="@+id/textViewSrcCamInputPanelTitle"
+            android:id="@+id/textViewSrcCamParametersTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimary"
+            android:background="@color/colorPrimaryDark"
             android:gravity="center"
             android:text="@string/src_cam_characteristics"
-            android:textColor="@color/colorAccent" />
+            android:textColor="@color/white" />
 
         <TextView
             android:id="@+id/textViewSrcCamHfovDeg"
@@ -70,14 +73,14 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/src_cam_hfovdeg_label"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/white"
             android:textSize="12sp" />
 
         <SeekBar
             android:id="@+id/seekBarSrcCamHfovDeg"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="3600" />
+            android:max="@integer/seekbar_srccam_hfovdeg_max" />
 
         <TextView
             android:id="@+id/textViewSrcCamFocalOffset"
@@ -85,14 +88,14 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/src_cam_focaloffset_label"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/white"
             android:textSize="12sp" />
 
         <SeekBar
             android:id="@+id/seekBarSrcCamFocalOffset"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="700" />
+            android:max="@integer/seekbar_srccam_focaloffset_max" />
 
         <TextView
             android:id="@+id/textViewSrcCamPrincipalPointX"
@@ -100,7 +103,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/src_cam_principalpointx_label"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/white"
             android:textSize="12sp"
             android:visibility="gone" />
 
@@ -117,7 +120,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/src_cam_principalpointy_label"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/white"
             android:textSize="12sp"
             android:visibility="gone" />
 
@@ -134,13 +137,13 @@
             android:background="@color/colorPrimaryDark" />
 
         <TextView
-            android:id="@+id/textViewDstCamInputPanelTitle"
+            android:id="@+id/textViewDstCamParametersTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimary"
+            android:background="@color/colorPrimaryDark"
             android:gravity="center"
             android:text="@string/dst_cam_characteristics"
-            android:textColor="@color/colorAccent" />
+            android:textColor="@color/white" />
 
         <TextView
             android:id="@+id/textViewDstCamHfovDeg"
@@ -148,7 +151,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/dst_cam_hfovdeg_label"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/white"
             android:textSize="12sp" />
 
         <SeekBar
@@ -171,7 +174,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/dst_cam_imgsize_label"
-                android:textColor="@color/colorAccent"
+                android:textColor="@color/white"
                 android:textSize="12sp" />
 
             <EditText
@@ -189,7 +192,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/x"
-                android:textColor="@color/colorAccent"
+                android:textColor="@color/white"
                 android:textSize="12sp" />
 
             <EditText
@@ -207,8 +210,25 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/px"
-                android:textColor="@color/colorAccent"
+                android:textColor="@color/white"
                 android:textSize="12sp" />
         </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorPrimaryDark" />
+
+        <Switch
+            android:id="@+id/switchAdvancedParameters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/advancedparametersswitch"
+            android:textColor="@color/white" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorPrimaryDark" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

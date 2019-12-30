@@ -2,13 +2,6 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/layoutSwitchAdvancedInputPanel"
-        android:title="@string/advanced"
-        android:textOn="@string/advanced"
-        android:textOff="@string/advanced"
-        app:showAsAction="ifRoom|withText"
-        app:actionLayout="@layout/switchlayout"/>
-    <item
         android:id="@+id/buttonloadImageFromGallery"
         android:title="Load"
         app:showAsAction="ifRoom|withText" />

@@ -2,6 +2,8 @@
  * TODO
  * - Measure hfovs
  * - Panoramizer
+ * - Grid with on/off
+ * - Check for updates and update
  * - Help
  * - Tests
  * - RELEASE FREE
@@ -40,6 +42,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -49,7 +52,6 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -61,18 +63,18 @@ public class MainActivity extends AppCompatActivity {
   private static final String TAG = MainActivity.class.getSimpleName();
 
   private static final int LOADIMAGEFROMGALLERY_REQUESTCODE = 100;
-  private static final String[] SUPPORTED_IMAGE_EXTENSIONS = {"jpeg", "jpg", "png"};
+  private static final String[] SUPPORTED_IMAGE_EXTENSIONS = {"jpeg", "jpg"};
   private static final int WRITEEXTERNALSTORAGE_REQUESTCODE = 200;
   private static final float SMALLIMAGE_SIZE_RATIO = 0.2f;
   private static final float INPUTPANEL_WIDTH_RATIO_LANDSCAPE = 0.4f;
   private static final int MAX_SRCIMAGETITLE_LENGTH = 32;
 
-  private static final float SRCCAM_HFOVDEG_MAX = 360.0f;
-  private static final float SRCCAM_FOCALLENGTH_MAX = 7.0f;
+  private static final float SRCCAM_HFOVDEG_MAX = 270.0f;
+  private static final float SRCCAM_FOCALLENGTH_MAX = 4.0f;
   private static final float DSTCAM_HFOVDEG_MAX = 170.0f;
 
   private static final int MAX_IMAGE_WIDTH_PX = 7680;
-  private static final int MAX_IMAGE_HEIGHT_PX = 4320;
+  private static final int MAX_IMAGE_HEIGHT_PX = MAX_IMAGE_WIDTH_PX;
   private static final int BASELINE_DISPLAYDENSITY_DP = 160;
   private static final String FLOAT_FORMAT_STR = "%.2f";
 
@@ -115,9 +117,11 @@ public class MainActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
 
     mImageTransformer = new ImageTransformer(this);
-    initUi();
 
-    setUiComponentsVisibilityAccordingToReleaseType();
+    initUi();
+    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
+    Log.d(TAG, "updateImages() in onCreate(.)...");
     updateImages();
   }
 
@@ -133,32 +137,16 @@ public class MainActivity extends AppCompatActivity {
 
   @Override
   public void onConfigurationChanged(@NonNull Configuration newConfig) {
+    Log.d(TAG, "onConfigurationChanged(.)...");
     super.onConfigurationChanged(newConfig);
     initUi();
+    Log.d(TAG, "updateImages() in onConfigurationChanged(.)...");
     updateImages();
   }
 
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     getMenuInflater().inflate(R.menu.barmenu, menu);
-    MenuItem layoutSwitchAdvancedInputPanel = menu.findItem(R.id.layoutSwitchAdvancedInputPanel);
-    Switch switchAdvancedInputPanel = layoutSwitchAdvancedInputPanel.getActionView()
-        .findViewById(R.id.switchAdvancedInputPanel);
-    switchAdvancedInputPanel.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-      @Override
-      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        updateInputPanel(isChecked);
-      }
-    });
-    switch (RELEASECONFIG.releaseType) {
-      case FREE:
-        layoutSwitchAdvancedInputPanel.setVisible(false);
-        break;
-      case PRO:
-        layoutSwitchAdvancedInputPanel.setVisible(true);
-        break;
-    }
-    updateInputPanel(switchAdvancedInputPanel.isChecked());
     return super.onCreateOptionsMenu(menu);
   }
 
@@ -215,9 +203,9 @@ public class MainActivity extends AppCompatActivity {
     BitmapFactory.Options bitmapFactoryOptions = new BitmapFactory.Options();
     bitmapFactoryOptions.inDensity = (int) ((float) BASELINE_DISPLAYDENSITY_DP
         * resourceDisplayDensity);
-    //final int imageResourceId = R.drawable.srcimage_citycar_185deg_600x400;
-    final int imageResourceId = R.drawable.srcimage_citywindow_195deg_1350x900;
-    //final int imageResourceId = R.drawable.srcimage_factoryhall_170deg_1100x733;
+    //final int imageResourceId = R.drawable.cityview_150deg_4256x2832;
+    final int imageResourceId = R.drawable.ladderboy_180_3025x2235;
+    //final int imageResourceId = R.drawable.libraryhallway_195deg_3910x2607;
     mSrcImage = BitmapFactory.decodeResource(getResources(),
         imageResourceId, bitmapFactoryOptions)
         .copy(Bitmap.Config.ARGB_8888, false);
@@ -240,6 +228,7 @@ public class MainActivity extends AppCompatActivity {
             Locale.getDefault(), getResources().getString(R.string.src_cam_hfovdeg_label) + ": " + FLOAT_FORMAT_STR + "°",
             mSrcCamParameters.hfovDeg));
         //Log.i(TAG, "mSrcCamHfovDeg, seekBarSrcCamHfovDeg: " + mSrcCamHfovDeg + ", " + seekBar.getProgress());
+        Log.d(TAG, "updateImages() for seekBarSrcCamHfovDeg...");
         updateImages();
       }
 
@@ -259,6 +248,7 @@ public class MainActivity extends AppCompatActivity {
             Locale.getDefault(), getResources().getString(R.string.src_cam_focaloffset_label)
                 + ": " + FLOAT_FORMAT_STR, mSrcCamParameters.focalOffset));
         //Log.i(TAG, "mSrcCamFocalOffset, seekBarSrcCamFocalOffset: " + mSrcCamFocalOffset + ", " + seekBar.getProgress());
+        Log.d(TAG, "updateImages() for seekBarSrcCamFocalOffset...");
         updateImages();
       }
 
@@ -279,6 +269,7 @@ public class MainActivity extends AppCompatActivity {
             String.format(Locale.getDefault(), getResources().getString(
                 R.string.src_cam_principalpointx_label) + ": " + FLOAT_FORMAT_STR,
                 mSrcCamParameters.principalPointXPx));
+        Log.d(TAG, "updateImages() for seekBarSrcCamPrincipalPointXPx...");
         updateImages();
       }
 
@@ -300,6 +291,7 @@ public class MainActivity extends AppCompatActivity {
             Locale.getDefault(), getResources().getString(
                 R.string.src_cam_principalpointy_label) + ": " + FLOAT_FORMAT_STR + "",
             mSrcCamParameters.principalPointYPx));
+        Log.d(TAG, "updateImages() for seekBarSrcCamPrincipalPointYPx...");
         updateImages();
       }
 
@@ -317,6 +309,7 @@ public class MainActivity extends AppCompatActivity {
         mDstCamHfovDeg = seekBarScaleToValueScale(seekBar, progress, DSTCAM_HFOVDEG_MAX);
         ((TextView) findViewById(R.id.textViewDstCamHfovDeg)).setText(String.format(Locale.getDefault(), getResources().getString(R.string.dst_cam_hfovdeg_label) + ": " + FLOAT_FORMAT_STR + "°", mDstCamHfovDeg));
         //Log.i(TAG, "mDstCamHfovDeg, seekBarDstCamHfovDeg: " + mDstCamHfovDeg + ", " + seekBar.getProgress());
+        Log.d(TAG, "updateImages() for seekBarDstCamHfovDeg...");
         updateImages();
       }
 
@@ -396,10 +389,19 @@ public class MainActivity extends AppCompatActivity {
         DSTCAM_HFOVDEG_MAX));
     editTextDstImageWidthPx.setText(String.format(Locale.US, "%d", mDstImageWidthPx));
     editTextDstImageHeightPx.setText(String.format(Locale.US, "%d", mDstImageHeightPx));
+
+    Switch switchAdvancedParameters = findViewById(R.id.switchAdvancedParameters);
+    switchAdvancedParameters.setOnCheckedChangeListener(
+        new CompoundButton.OnCheckedChangeListener() {
+          @Override
+          public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+              updateCameraParametersPanel(isChecked);
+          }
+      });
   }
 
   private void adjustViewSizesToLandscape() {
-    LinearLayout layout = findViewById(R.id.linearLayoutInputPanel);
+    LinearLayout layout = findViewById(R.id.linearLayoutCameraParameters);
     ViewGroup.LayoutParams params = layout.getLayoutParams();
     DisplayMetrics displayMetrics = new DisplayMetrics();
     getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -407,22 +409,7 @@ public class MainActivity extends AppCompatActivity {
     layout.setLayoutParams(params);
   }
 
-  private void setUiComponentsVisibilityAccordingToReleaseType() {
-    invalidateOptionsMenu();
-    // Adjusting menu items' visibility can be done in onCreateOptionsMenu(.)
-    switch (RELEASECONFIG.releaseType) {
-      case FREE:
-        findViewById(R.id.textViewSrcCamPrincipalPointX).setVisibility(View.GONE);
-        findViewById(R.id.seekBarSrcCamPrincipalPointX).setVisibility(View.GONE);
-        findViewById(R.id.textViewSrcCamPrincipalPointY).setVisibility(View.GONE);
-        findViewById(R.id.seekBarSrcCamPrincipalPointY).setVisibility(View.GONE);
-        break;
-      case PRO:
-        break;
-    }
-  }
-
-  private void updateInputPanel(boolean advancedInputEnabled) {
+  private void updateCameraParametersPanel(boolean advancedInputEnabled) {
     final int visibility;
     if (advancedInputEnabled) {
       visibility = View.VISIBLE;
@@ -433,8 +420,6 @@ public class MainActivity extends AppCompatActivity {
     findViewById(R.id.seekBarSrcCamPrincipalPointX).setVisibility(visibility);
     findViewById(R.id.textViewSrcCamPrincipalPointY).setVisibility(visibility);
     findViewById(R.id.seekBarSrcCamPrincipalPointY).setVisibility(visibility);
-
-    setUiComponentsVisibilityAccordingToReleaseType();
   }
 
   private void showHelp() {
@@ -494,6 +479,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "mDstImageSizePx in onActivityResult(.): " + mDstImageWidthPx + "x"
                 + mDstImageHeightPx);
 
+            Log.d(TAG, "updateImages() in onActivityResult(.)...");
             updateImages();
 
             ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
@@ -504,7 +490,7 @@ public class MainActivity extends AppCompatActivity {
             SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointY);
             seekBarSrcCamPrincipalPointYPx.setProgress(
                 valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
-                    mSrcCamParameters.principalPointYPx, mSrcImage.getWidth()));
+                    mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
             ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(
                 String.format(Locale.US, "%d", mDstImageWidthPx));
             ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(
@@ -528,7 +514,6 @@ public class MainActivity extends AppCompatActivity {
     for (String sie : SUPPORTED_IMAGE_EXTENSIONS) {
       mimeTypes.add("image/" + sie);
     }
-    //String[] mimeTypes = {"image/jpeg", "image/png"};
     intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
     startActivityForResult(intent, LOADIMAGEFROMGALLERY_REQUESTCODE);
   }
