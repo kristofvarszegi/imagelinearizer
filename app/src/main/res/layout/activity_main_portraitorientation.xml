@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
+    android:background="@android:color/darker_gray"
     tools:context=".MainActivity">
 
     <ImageView
@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/src_cam_title"
-            android:textColor="@color/white"
+            android:textColor="@android:color/white"
             android:textSize="8sp" />
 
         <ImageView
@@ -46,187 +46,11 @@
             android:scaleType="fitXY" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/linearLayoutCameraParameters"
+    <include
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/cameraparameterspanel_background"
-        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent">
-
-        <TextView
-            android:id="@+id/textViewSrcCamParametersTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/colorPrimaryDark"
-            android:gravity="center"
-            android:text="@string/src_cam_characteristics"
-            android:textColor="@color/white" />
-
-        <TextView
-            android:id="@+id/textViewSrcCamHfovDeg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/src_cam_hfovdeg_label"
-            android:textColor="@color/white"
-            android:textSize="12sp" />
-
-        <SeekBar
-            android:id="@+id/seekBarSrcCamHfovDeg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="@integer/seekbar_srccam_hfovdeg_max" />
-
-        <TextView
-            android:id="@+id/textViewSrcCamFocalOffset"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/src_cam_focaloffset_label"
-            android:textColor="@color/white"
-            android:textSize="12sp" />
-
-        <SeekBar
-            android:id="@+id/seekBarSrcCamFocalOffset"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="@integer/seekbar_srccam_focaloffset_max" />
-
-        <TextView
-            android:id="@+id/textViewSrcCamPrincipalPointX"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/src_cam_principalpointx_label"
-            android:textColor="@color/white"
-            android:textSize="12sp"
-            android:visibility="gone" />
-
-        <SeekBar
-            android:id="@+id/seekBarSrcCamPrincipalPointX"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="100"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/textViewSrcCamPrincipalPointY"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/src_cam_principalpointy_label"
-            android:textColor="@color/white"
-            android:textSize="12sp"
-            android:visibility="gone" />
-
-        <SeekBar
-            android:id="@+id/seekBarSrcCamPrincipalPointY"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="100"
-            android:visibility="gone" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/colorPrimaryDark" />
-
-        <TextView
-            android:id="@+id/textViewDstCamParametersTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/colorPrimaryDark"
-            android:gravity="center"
-            android:text="@string/dst_cam_characteristics"
-            android:textColor="@color/white" />
-
-        <TextView
-            android:id="@+id/textViewDstCamHfovDeg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/dst_cam_hfovdeg_label"
-            android:textColor="@color/white"
-            android:textSize="12sp" />
-
-        <SeekBar
-            android:id="@+id/seekBarDstCamHfovDeg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="1700" />
-
-        <LinearLayout
-            android:id="@+id/linearLayoutDstImageSizePx"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:visibility="visible">
-
-            <TextView
-                android:id="@+id/textViewDstImageSizePx"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/dst_cam_imgsize_label"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
-
-            <EditText
-                android:id="@+id/editTextDstImageWidthPx"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:textColor="@color/colorAccent"
-                android:textSize="12sp"
-                tools:ignore="Autofill" />
-
-            <TextView
-                android:id="@+id/textViewDstImageSizePxSeparator"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/x"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
-
-            <EditText
-                android:id="@+id/editTextDstImageHeightPx"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:textColor="@color/colorAccent"
-                android:textSize="12sp"
-                tools:ignore="Autofill" />
-
-            <TextView
-                android:id="@+id/textViewDstImageSizePxUnit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/px"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/colorPrimaryDark" />
-
-        <Switch
-            android:id="@+id/switchAdvancedParameters"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/advancedparametersswitch"
-            android:textColor="@color/white" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/colorPrimaryDark" />
-    </LinearLayout>
-
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        layout="@layout/camera_parameters_panel" />
 </androidx.constraintlayout.widget.ConstraintLayout>

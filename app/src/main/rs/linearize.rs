@@ -8,29 +8,46 @@ float srcCamHfovDeg;
 float srcCamFocalOffset;
 float srcCamPrincipalPointXPx;
 float srcCamPrincipalPointYPx;
+int dstCamGeometryId;
 float dstCamHfovDeg;
 int dstImageWidthPx;
 int dstImageHeightPx;
 
-static float2 pinholeToFisheye(float2 dstImagePoint) {
-  float3 viewSpaceVec;
-  viewSpaceVec.x = dstImagePoint.x - 0.5f * (float) dstImageWidthPx;
-  viewSpaceVec.y = dstImagePoint.y - 0.5f * (float) dstImageHeightPx;
-  viewSpaceVec.z = 0.5f * (float) dstImageWidthPx / tan(radians(dstCamHfovDeg / 2.f));
-  viewSpaceVec = normalize(viewSpaceVec);
+static float3 pinholeImageSpaceToCameraSpace(float2 dstImagePoint) {
+  float3 camSpaceVec;
+  camSpaceVec.x = dstImagePoint.x - 0.5f * (float) dstImageWidthPx;
+  camSpaceVec.y = dstImagePoint.y - 0.5f * (float) dstImageHeightPx;
+  camSpaceVec.z = 0.5f * (float) dstImageWidthPx / tan(radians(dstCamHfovDeg / 2.f));
+  return normalize(camSpaceVec);
+}
 
+static float3 equirectangularImageSpaceToCameraSpace(float2 dstImagePoint) {
+  float3 camSpaceVec;
+  const float horizontalAngleRad = radians(dstCamHfovDeg / 2.f)
+      * (dstImagePoint.x - 0.5f * (float) dstImageWidthPx) / (float) (dstImageWidthPx / 2);
+  const float dstCamVfovDeg = dstCamHfovDeg * (float) dstImageHeightPx / (float) dstImageWidthPx;
+  const float verticalAngleRad = radians(dstCamVfovDeg / 2.f)
+      * (dstImagePoint.y - 0.5f * (float) dstImageHeightPx) / (float) (dstImageHeightPx / 2);
+  camSpaceVec.x = cos(verticalAngleRad) * sin(horizontalAngleRad);
+  camSpaceVec.y = sin(verticalAngleRad);
+  camSpaceVec.z = cos(verticalAngleRad) * cos(horizontalAngleRad);
+  //camSpaceVec.z = sqrt(1.f - (camSpaceVec.x * camSpaceVec.x + camSpaceVec.y * camSpaceVec.y));
+  return normalize(camSpaceVec);
+}
+
+static float2 fisheyeCameraSpaceToImageSpace(float3 camSpaceVec) {
   const float srcCamViewPointOffset = cos(radians(srcCamHfovDeg / 2.f));
-  const float srcCamViewSpaceVecZ = viewSpaceVec.z + (srcCamFocalOffset - srcCamViewPointOffset);
+  const float srcCamViewSpaceVecZ = camSpaceVec.z + (srcCamFocalOffset - srcCamViewPointOffset);
   const float srcCamImagePlaneHalfWidth = sin(radians(srcCamHfovDeg / 2.f));
 
   float2 srcImagePoint;
   srcImagePoint.x = ((0.5f * (float) srcImageWidthPx)
-          * (srcCamFocalOffset * viewSpaceVec.x / srcCamViewSpaceVecZ)
+          * (srcCamFocalOffset * camSpaceVec.x / srcCamViewSpaceVecZ)
           / srcCamImagePlaneHalfWidth)
       + srcCamPrincipalPointXPx;
   srcImagePoint.y = ((0.5f * (float) srcImageHeightPx
               / ((float) srcImageHeightPx / (float) srcImageWidthPx))
-          * (srcCamFocalOffset * viewSpaceVec.y / srcCamViewSpaceVecZ)
+          * (srcCamFocalOffset * camSpaceVec.y / srcCamViewSpaceVecZ)
           / srcCamImagePlaneHalfWidth)
       + srcCamPrincipalPointYPx;
   //srcImagePoint.x = -1.f;
@@ -43,7 +60,17 @@ uchar4 __attribute__((kernel)) linearize(uint32_t x, uint32_t y) {
   float2 dstImagePoint;
   dstImagePoint.x = (float) x + 0.5f;
   dstImagePoint.y = (float) y + 0.5f;
-  const float2 srcImagePoint = pinholeToFisheye(dstImagePoint);
+  float3 camSpaceVec;
+  switch (dstCamGeometryId) {
+    case 0:
+      camSpaceVec = pinholeImageSpaceToCameraSpace(dstImagePoint);
+      break;
+    case 1:
+      camSpaceVec = equirectangularImageSpaceToCameraSpace(dstImagePoint);
+      break;
+  }
+  const float2 srcImagePoint = fisheyeCameraSpaceToImageSpace(camSpaceVec);
+  //const float2 srcImagePoint = pinholeToFisheye(dstImagePoint);
   int2 srcImagePointPx;
   srcImagePointPx.x = round(srcImagePoint.x);
   srcImagePointPx.y = round(srcImagePoint.y);

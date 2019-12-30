@@ -39,7 +39,7 @@ final class FisheyeParameters {
         break;
       case R.drawable.cityview_150deg_4256x2832:
         hfovDeg = 150.f;
-        focalOffset = 1.5f;
+        focalOffset = 1.15f;
         principalPointXPx = 4256.f / 2.f;
         principalPointYPx = 2832.f / 2.f;
         break;
@@ -56,7 +56,7 @@ final class FisheyeParameters {
         principalPointYPx = 2235.f / 2.f;
         break;
       case R.drawable.libraryhallway_195deg_3910x2607:
-        hfovDeg = 230.f;
+        hfovDeg = 185.f;
         focalOffset = 1.5f;
         principalPointXPx = 3910.f / 2.f;
         principalPointYPx = 2607.f / 2.f;
@@ -74,7 +74,7 @@ final class FisheyeParameters {
         principalPointYPx = 2640.f / 2.f;
         break;
       case R.drawable.redcityroad_120deg_3000x2000:
-        hfovDeg = 120.f;
+        hfovDeg = 150.f;
         focalOffset = 1.3f;
         principalPointXPx = 3000.f / 2.f;
         principalPointYPx = 2000.f / 2.f;

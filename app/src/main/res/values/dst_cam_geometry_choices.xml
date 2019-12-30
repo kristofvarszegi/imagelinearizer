@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="dst_cam_geometry_choices">
+        <item>@string/pinhole_geometry</item>
+        <item>@string/equirectangular_geometry</item>
+    </string-array>
+</resources>

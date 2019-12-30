@@ -7,6 +7,9 @@
     <string name="src_cam_principalpointx_label">Optical center X (in pixels)</string>
     <string name="src_cam_principalpointy_label">Optical center Y (in pixels)</string>
     <string name="dst_cam_characteristics">Desired camera characteristics</string>
+    <string name="dst_cam_geometry">Geometry:&#032;</string>
+    <string name="pinhole_geometry">Linear</string>
+    <string name="equirectangular_geometry">Panoramic</string>
     <string name="dst_cam_hfovdeg_label">Horizontal angle of view</string>
     <string name="dst_cam_imgsize_label">Image size:&#032;</string>
     <string name="advancedparametersswitch">Advanced parameters</string>

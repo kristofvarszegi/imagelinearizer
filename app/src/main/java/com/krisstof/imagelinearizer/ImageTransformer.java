@@ -19,17 +19,19 @@ final class ImageTransformer {
     mLinearizeScript = new ScriptC_linearize(mRenderScript);
   }
 
-  Bitmap linearize(final Bitmap srcImage, FisheyeParameters srcCamParameters, int dstImageWidthPx,
-                   int dstImageHeightPx, float dstCamHfovDeg) {
+  Bitmap linearize(final Bitmap srcImage, final FisheyeParameters srcCamParameters,
+                   final DstCamParameters dstCamParameters) {
     Log.d(TAG, "Linearization parameters:");
-    Log.d(TAG, "  srcImageWidthPx, HeightPx: " + srcImage.getWidth() + ", "
+    Log.d(TAG, "  src imageWidthPx, HeightPx: " + srcImage.getWidth() + ", "
         + srcImage.getHeight());
-    Log.d(TAG, "  srcCamHfovDeg, FocalOffset: " + srcCamParameters.hfovDeg + ", "
+    Log.d(TAG, "  src hfovDeg, FocalOffset: " + srcCamParameters.hfovDeg + ", "
         + srcCamParameters.focalOffset);
-    Log.d(TAG, "  srcCamPrincipalPointXPx, YPx: " + srcCamParameters.principalPointXPx + ", "
+    Log.d(TAG, "  src principalPointXPx, YPx: " + srcCamParameters.principalPointXPx + ", "
         + srcCamParameters.principalPointYPx);
-    Log.d(TAG, "  dstImageWidthPx, HeightPx: " + dstImageWidthPx + ", " + dstImageHeightPx);
-    Log.d(TAG, "  dstCamHfovDeg: " + dstCamHfovDeg);
+    Log.d(TAG, "  dst geometryId: " + dstCamParameters.getGeometryId());
+    Log.d(TAG, "  dst hfovDeg: " + dstCamParameters.hfovDeg);
+    Log.d(TAG, "  dst imageWidthPx, HeightPx: " + dstCamParameters.imageWidthPx + ", "
+        + dstCamParameters.imageHeightPx);
     Allocation srcImageAllocation = Allocation.createFromBitmap(mRenderScript, srcImage);
     //Log.d(TAG, "srcImageAllocation pixel count: " + srcImageAllocation.getBytesSize() / 4);
     mLinearizeScript.set_srcImage(srcImageAllocation);
@@ -39,16 +41,18 @@ final class ImageTransformer {
     mLinearizeScript.set_srcCamFocalOffset(srcCamParameters.focalOffset);
     mLinearizeScript.set_srcCamPrincipalPointXPx(srcCamParameters.principalPointXPx);
     mLinearizeScript.set_srcCamPrincipalPointYPx(srcCamParameters.principalPointYPx);
-    mLinearizeScript.set_dstImageWidthPx(dstImageWidthPx);
-    mLinearizeScript.set_dstImageHeightPx(dstImageHeightPx);
-    mLinearizeScript.set_dstCamHfovDeg(dstCamHfovDeg);
+    mLinearizeScript.set_dstCamGeometryId(dstCamParameters.getGeometryId());
+    mLinearizeScript.set_dstImageWidthPx(dstCamParameters.imageWidthPx);
+    mLinearizeScript.set_dstImageHeightPx(dstCamParameters.imageHeightPx);
+    mLinearizeScript.set_dstCamHfovDeg(dstCamParameters.hfovDeg);
     Type.Builder typeBuilder = new Type.Builder(mRenderScript, Element.RGBA_8888(mRenderScript));
-    typeBuilder.setX(dstImageWidthPx);
-    typeBuilder.setY(dstImageHeightPx);
+    typeBuilder.setX(dstCamParameters.imageWidthPx);
+    typeBuilder.setY(dstCamParameters.imageHeightPx);
     final Type dstAllocationType = typeBuilder.create();
     Allocation dstImageAllocation = Allocation.createTyped(mRenderScript, dstAllocationType);
     mLinearizeScript.forEach_linearize(dstImageAllocation);
-    Bitmap dstImage = Bitmap.createBitmap(dstImageWidthPx, dstImageHeightPx, Bitmap.Config.ARGB_8888);
+    Bitmap dstImage = Bitmap.createBitmap(dstCamParameters.imageWidthPx,
+        dstCamParameters.imageHeightPx, Bitmap.Config.ARGB_8888);
     dstImageAllocation.copyTo(dstImage);
     //Log.d(TAG, "dstImage density: " + dstImage.getDensity());
     return dstImage;

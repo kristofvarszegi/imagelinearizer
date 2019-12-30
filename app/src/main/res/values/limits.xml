@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="seekbar_srccam_hfovdeg_max" >2700</integer>
+    <integer name="seekbar_srccam_hfovdeg_max" >2350</integer>
     <integer name="seekbar_srccam_focaloffset_max" >400</integer>
 </resources>

@@ -2,12 +2,12 @@
  * TODO
  * - Measure hfovs
  * - Panoramizer
+ * - Rotate dst camera
  * - Grid with on/off
  * - Check for updates and update
  * - Help
  * - Tests
  * - RELEASE FREE
- * - UI for rotating camera
  * - Online camera input
  *
  * Implemented
@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -43,11 +44,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -69,9 +73,10 @@ public class MainActivity extends AppCompatActivity {
   private static final float INPUTPANEL_WIDTH_RATIO_LANDSCAPE = 0.4f;
   private static final int MAX_SRCIMAGETITLE_LENGTH = 32;
 
-  private static final float SRCCAM_HFOVDEG_MAX = 270.0f;
+  private static final float SRCCAM_HFOVDEG_MAX = 235.0f;
   private static final float SRCCAM_FOCALLENGTH_MAX = 4.0f;
   private static final float DSTCAM_HFOVDEG_MAX = 170.0f;
+  private static final int PRINCIPALPOINT_SEEKBAR_DECIMALS = 2;
 
   private static final int MAX_IMAGE_WIDTH_PX = 7680;
   private static final int MAX_IMAGE_HEIGHT_PX = MAX_IMAGE_WIDTH_PX;
@@ -79,11 +84,9 @@ public class MainActivity extends AppCompatActivity {
   private static final String FLOAT_FORMAT_STR = "%.2f";
 
   enum RELEASE_TYPE {FREE, PRO}
-
   private static final class ReleaseConfig {
     RELEASE_TYPE releaseType;
     int[] maxSavedImageSizePx;
-
     ReleaseConfig(RELEASE_TYPE releaseType, final int[] maxSavedImageSizePx) {
       if (maxSavedImageSizePx.length != 2) {
         throw new IllegalArgumentException("Max. image size must have 2 elements but it has "
@@ -93,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
       this.maxSavedImageSizePx = new int[]{maxSavedImageSizePx[0], maxSavedImageSizePx[1]};
     }
   }
-
   private static final ReleaseConfig FREE_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.FREE,
       new int[]{320, 180});
   private static final ReleaseConfig PRO_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.PRO,
@@ -101,12 +103,13 @@ public class MainActivity extends AppCompatActivity {
   private static final ReleaseConfig RELEASECONFIG = FREE_RELEASECONFIG;
   //private static final ReleaseConfig RELEASECONFIG = PRO_RELEASECONFIG;
 
+  private Context mContext;
+
   private Bitmap mSrcImage;
   private FisheyeParameters mSrcCamParameters;
   private Bitmap mDstImage;
 
-  private float mDstCamHfovDeg = 150.f;
-  private int mDstImageWidthPx, mDstImageHeightPx;
+  private DstCamParameters mDstCamParameters;
 
   private ImageTransformer mImageTransformer;
   private ImageView mSrcCamView;
@@ -115,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    mContext = getApplicationContext();
 
     mImageTransformer = new ImageTransformer(this);
 
@@ -186,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
     switch (deviceOrientation) {
       case ORIENTATION_LANDSCAPE:
         setContentView(R.layout.activity_main_landscapeorientation);
-        adjustViewSizesToLandscape();
+        adjustViewsToLandscapeOrientation();
         break;
       case ORIENTATION_PORTRAIT:
         setContentView(R.layout.activity_main_portraitorientation);
@@ -204,8 +208,9 @@ public class MainActivity extends AppCompatActivity {
     bitmapFactoryOptions.inDensity = (int) ((float) BASELINE_DISPLAYDENSITY_DP
         * resourceDisplayDensity);
     //final int imageResourceId = R.drawable.cityview_150deg_4256x2832;
-    final int imageResourceId = R.drawable.ladderboy_180_3025x2235;
+    //final int imageResourceId = R.drawable.ladderboy_180_3025x2235;
     //final int imageResourceId = R.drawable.libraryhallway_195deg_3910x2607;
+    final int imageResourceId = R.drawable.redcityroad_120deg_3000x2000;
     mSrcImage = BitmapFactory.decodeResource(getResources(),
         imageResourceId, bitmapFactoryOptions)
         .copy(Bitmap.Config.ARGB_8888, false);
@@ -215,9 +220,12 @@ public class MainActivity extends AppCompatActivity {
     TextView textViewSrcCamTitle = findViewById(R.id.textViewSrcCamTitle);
     textViewSrcCamTitle.setText(getString(R.string.src_cam_title));
 
-    mDstImageWidthPx = (int) ((float) mSrcImage.getWidth());
-    mDstImageHeightPx = (int) ((float) mSrcImage.getHeight());
-    Log.d(TAG, "mDstImageSizePx in onCreate(.): " + mDstImageWidthPx + "x" + mDstImageHeightPx);
+    mDstCamParameters = new DstCamParameters();
+    mDstCamParameters.imageWidthPx = (int) ((float) mSrcImage.getWidth());
+    mDstCamParameters.imageHeightPx = (int) ((float) mSrcImage.getHeight());
+    //mDstCamParameters.geometry = DstCamParameters.CAMERA_GEOMETRY.EQUIRECTANGULAR;
+    Log.d(TAG, "mDstImageSizePx in onCreate(.): " + mDstCamParameters.imageWidthPx + "x"
+        + mDstCamParameters.imageHeightPx);
     mDstCamView = findViewById(R.id.imageViewDstCam);
 
     SeekBar seekBarSrcCamHfovDeg = findViewById(R.id.seekBarSrcCamHfovDeg);
@@ -261,6 +269,8 @@ public class MainActivity extends AppCompatActivity {
       }
     });
     SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointX);
+    seekBarSrcCamPrincipalPointXPx.setMax(
+        (int) ((double) mSrcImage.getWidth() * Math.pow(10., PRINCIPALPOINT_SEEKBAR_DECIMALS)));
     seekBarSrcCamPrincipalPointXPx.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         mSrcCamParameters.principalPointXPx = seekBarScaleToValueScale(seekBar, progress,
@@ -282,6 +292,8 @@ public class MainActivity extends AppCompatActivity {
       }
     });
     SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointY);
+    seekBarSrcCamPrincipalPointYPx.setMax(
+        (int) ((double) mSrcImage.getHeight() * Math.pow(10., PRINCIPALPOINT_SEEKBAR_DECIMALS)));
     seekBarSrcCamPrincipalPointYPx.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       @Override
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -303,11 +315,29 @@ public class MainActivity extends AppCompatActivity {
       public void onStopTrackingTouch(SeekBar seekbar) {
       }
     });
+
+    Spinner spinnerDstCamGeometry = findViewById(R.id.spinnerDstCamGeometry);
+    spinnerDstCamGeometry.setAdapter(new ArrayAdapter<>(this,
+        R.layout.spinner_layout, getResources().getStringArray(R.array.dst_cam_geometry_choices)));
+    spinnerDstCamGeometry.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+      @Override
+      public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+        mDstCamParameters.geometry = cameraGeometry((String) parentView.getItemAtPosition(position),
+            mContext);
+        updateImages();
+      }
+      @Override
+      public void onNothingSelected(AdapterView<?> parentView) {
+      }
+    });
+    spinnerDstCamGeometry.setSelection(mDstCamParameters.getGeometryId());
     SeekBar seekBarDstCamHfovDeg = findViewById(R.id.seekBarDstCamHfovDeg);
     seekBarDstCamHfovDeg.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        mDstCamHfovDeg = seekBarScaleToValueScale(seekBar, progress, DSTCAM_HFOVDEG_MAX);
-        ((TextView) findViewById(R.id.textViewDstCamHfovDeg)).setText(String.format(Locale.getDefault(), getResources().getString(R.string.dst_cam_hfovdeg_label) + ": " + FLOAT_FORMAT_STR + "°", mDstCamHfovDeg));
+        mDstCamParameters.hfovDeg = seekBarScaleToValueScale(seekBar, progress, DSTCAM_HFOVDEG_MAX);
+        ((TextView) findViewById(R.id.textViewDstCamHfovDeg)).setText(String.format(
+            Locale.getDefault(), getResources().getString(R.string.dst_cam_hfovdeg_label) + ": " + FLOAT_FORMAT_STR + "°",
+            mDstCamParameters.hfovDeg));
         //Log.i(TAG, "mDstCamHfovDeg, seekBarDstCamHfovDeg: " + mDstCamHfovDeg + ", " + seekBar.getProgress());
         Log.d(TAG, "updateImages() for seekBarDstCamHfovDeg...");
         updateImages();
@@ -337,14 +367,14 @@ public class MainActivity extends AppCompatActivity {
         if (s.length() > 0) {
           int newDstImageWidthPx = Integer.parseInt(s.toString());
           if (newDstImageWidthPx > 0 && newDstImageWidthPx <= MAX_IMAGE_WIDTH_PX) {
-            mDstImageWidthPx = newDstImageWidthPx;
+            mDstCamParameters.imageWidthPx = newDstImageWidthPx;
           } else {
             needToReset = true;
           }
         }
         if (needToReset) {
           ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(String.format(Locale.US,
-              "%d", mDstImageWidthPx));
+              "%d", mDstCamParameters.imageWidthPx));
         }
       }
     });
@@ -365,14 +395,14 @@ public class MainActivity extends AppCompatActivity {
         if (s.length() > 0) {
           int newDstImageHeightPx = Integer.parseInt(s.toString());
           if (newDstImageHeightPx > 0 && newDstImageHeightPx <= MAX_IMAGE_HEIGHT_PX) {
-            mDstImageHeightPx = newDstImageHeightPx;
+            mDstCamParameters.imageHeightPx = newDstImageHeightPx;
           } else {
             needToReset = true;
           }
         }
         if (needToReset) {
           ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(String.format(Locale.US,
-              "%d", mDstImageHeightPx));
+              "%d", mDstCamParameters.imageHeightPx));
         }
       }
     });
@@ -385,10 +415,10 @@ public class MainActivity extends AppCompatActivity {
         mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
     seekBarSrcCamPrincipalPointYPx.setProgress(valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
         mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
-    seekBarDstCamHfovDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamHfovDeg, mDstCamHfovDeg,
-        DSTCAM_HFOVDEG_MAX));
-    editTextDstImageWidthPx.setText(String.format(Locale.US, "%d", mDstImageWidthPx));
-    editTextDstImageHeightPx.setText(String.format(Locale.US, "%d", mDstImageHeightPx));
+    seekBarDstCamHfovDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamHfovDeg,
+        mDstCamParameters.hfovDeg, DSTCAM_HFOVDEG_MAX));
+    editTextDstImageWidthPx.setText(String.format(Locale.US, "%d", mDstCamParameters.imageWidthPx));
+    editTextDstImageHeightPx.setText(String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
 
     Switch switchAdvancedParameters = findViewById(R.id.switchAdvancedParameters);
     switchAdvancedParameters.setOnCheckedChangeListener(
@@ -400,7 +430,7 @@ public class MainActivity extends AppCompatActivity {
       });
   }
 
-  private void adjustViewSizesToLandscape() {
+  private void adjustViewsToLandscapeOrientation() {
     LinearLayout layout = findViewById(R.id.linearLayoutCameraParameters);
     ViewGroup.LayoutParams params = layout.getLayoutParams();
     DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -474,10 +504,10 @@ public class MainActivity extends AppCompatActivity {
             //final float pixelDensity = 1.0f;
             // From gallery the bitmap size tells the actual image resolution, don't know why
 
-            mDstImageWidthPx = mSrcImage.getWidth();
-            mDstImageHeightPx = mSrcImage.getHeight();
-            Log.d(TAG, "mDstImageSizePx in onActivityResult(.): " + mDstImageWidthPx + "x"
-                + mDstImageHeightPx);
+            mDstCamParameters.imageWidthPx = mSrcImage.getWidth();
+            mDstCamParameters.imageHeightPx = mSrcImage.getHeight();
+            Log.d(TAG, "mDstImageSizePx in onActivityResult(.): "
+                + mDstCamParameters.imageWidthPx + "x" + mDstCamParameters.imageHeightPx);
 
             Log.d(TAG, "updateImages() in onActivityResult(.)...");
             updateImages();
@@ -492,9 +522,9 @@ public class MainActivity extends AppCompatActivity {
                 valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
                     mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
             ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(
-                String.format(Locale.US, "%d", mDstImageWidthPx));
+                String.format(Locale.US, "%d", mDstCamParameters.imageWidthPx));
             ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(
-                String.format(Locale.US, "%d", mDstImageHeightPx));
+                String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
           } else {
             Toast.makeText(this, "Output image must be max. "
                 + MAX_IMAGE_WIDTH_PX + " pixels wide and max. "
@@ -568,8 +598,7 @@ public class MainActivity extends AppCompatActivity {
           mSrcImage.getHeight() * srcImageSmallWidth / mSrcImage.getWidth(), false));
     }
 
-    mDstImage = mImageTransformer.linearize(mSrcImage, mSrcCamParameters, mDstImageWidthPx,
-        mDstImageHeightPx, mDstCamHfovDeg);
+    mDstImage = mImageTransformer.linearize(mSrcImage, mSrcCamParameters, mDstCamParameters);
     mDstCamView.setImageBitmap(mDstImage);
   }
 
@@ -580,5 +609,17 @@ public class MainActivity extends AppCompatActivity {
   static int valueScaleToSeekBarScale(final SeekBar seekBar, float value, float valueMax) {
     //Log.i(TAG, "  value, limits, normdValue; seekBar max: " + value + ", " + valueLimits[0] + "->" + valueLimits[1] + ", " + normdValue + "; " + seekBar.getMax());
     return (int) ((value / valueMax) * (float) seekBar.getMax());
+  }
+
+  static DstCamParameters.CAMERA_GEOMETRY cameraGeometry(final String geometryStr,
+                                                         final Context context) {
+    if (geometryStr.equals(context.getResources().getString(R.string.pinhole_geometry))) {
+      return DstCamParameters.CAMERA_GEOMETRY.PINHOLE;
+    } else if (geometryStr.equals(context.getResources().getString(
+        R.string.equirectangular_geometry))) {
+      return DstCamParameters.CAMERA_GEOMETRY.EQUIRECTANGULAR;
+    } else {
+      throw new IllegalArgumentException("Invalid camera geometry string: " + geometryStr);
+    }
   }
 }
