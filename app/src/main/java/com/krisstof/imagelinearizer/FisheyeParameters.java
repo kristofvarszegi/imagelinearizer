@@ -43,9 +43,15 @@ final class FisheyeParameters {
         principalPointXPx = 4256.f / 2.f;
         principalPointYPx = 2832.f / 2.f;
         break;
-      case R.drawable.factoryhall_170deg_5184x3456:
-        hfovDeg = 170.f;
-        focalOffset = 1.3f;
+      case R.drawable.factoryhall_150deg_1920x1280:
+        hfovDeg = 150.f;
+        focalOffset = 1.5f;
+        principalPointXPx = 1920.f / 2.f;
+        principalPointYPx = 1280.f / 2.f;
+        break;
+      case R.drawable.factoryhall_150deg_5184x3456:
+        hfovDeg = 150.f;
+        focalOffset = 1.5f;
         principalPointXPx = 5184.f / 2.f;
         principalPointYPx = 3456.f / 2.f;
         break;

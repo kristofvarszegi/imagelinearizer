@@ -72,7 +72,7 @@
         android:visibility="gone" />
 
     <SeekBar
-        android:id="@+id/seekBarSrcCamPrincipalPointX"
+        android:id="@+id/seekBarSrcCamPrincipalPointXPx"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:max="100"
@@ -94,7 +94,7 @@
         android:visibility="gone" />
 
     <SeekBar
-        android:id="@+id/seekBarSrcCamPrincipalPointY"
+        android:id="@+id/seekBarSrcCamPrincipalPointYPx"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:max="100"
@@ -118,6 +118,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@android:color/transparent" />
+
     <LinearLayout
         android:id="@+id/linearLayoutDstCamGeometry"
         android:layout_width="wrap_content"
@@ -144,6 +145,7 @@
             android:gravity="center_horizontal"
             android:spinnerMode="dropdown" />
     </LinearLayout>
+
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -173,6 +175,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/colorPrimaryDark" />
+
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -209,7 +212,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="@string/x"
+            android:text="@string/image_size_separator"
             android:textColor="@android:color/white"
             android:textSize="12sp" />
 
@@ -231,6 +234,7 @@
             android:textColor="@android:color/white"
             android:textSize="12sp" />
     </LinearLayout>
+
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -240,6 +244,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/colorPrimaryDark" />
+
     <TextView
         android:id="@+id/textViewDstCamYRotDeg"
         android:layout_width="match_parent"
@@ -248,6 +253,7 @@
         android:text="@string/dstcam_yrotdeg_label"
         android:textColor="@android:color/white"
         android:textSize="12sp" />
+
     <SeekBar
         android:id="@+id/seekBarDstCamYRotDeg"
         android:layout_width="match_parent"
@@ -258,6 +264,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/colorPrimaryDark" />
+
     <TextView
         android:id="@+id/textViewDstCamXRotDeg"
         android:layout_width="match_parent"
@@ -266,6 +273,7 @@
         android:text="@string/dstcam_xrotdeg_label"
         android:textColor="@android:color/white"
         android:textSize="12sp" />
+
     <SeekBar
         android:id="@+id/seekBarDstCamXRotDeg"
         android:layout_width="match_parent"
@@ -276,6 +284,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/colorPrimaryDark" />
+
     <TextView
         android:id="@+id/textViewDstCamZRotDeg"
         android:layout_width="match_parent"
@@ -284,6 +293,7 @@
         android:text="@string/dstcam_zrotdeg_label"
         android:textColor="@android:color/white"
         android:textSize="12sp" />
+
     <SeekBar
         android:id="@+id/seekBarDstCamZRotDeg"
         android:layout_width="match_parent"
@@ -303,7 +313,7 @@
         android:id="@+id/switchAdvancedParameters"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:checked="true"
+        android:checked="false"
         android:text="@string/advancedparametersswitch"
         android:textColor="@android:color/white" />
 
@@ -311,11 +321,12 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/colorPrimaryDark" />
+
     <Switch
         android:id="@+id/switchDstImageGridOverlay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:checked="true"
+        android:checked="false"
         android:text="@string/dstimagegridoverlayswitch"
         android:textColor="@android:color/white" />
 </LinearLayout>

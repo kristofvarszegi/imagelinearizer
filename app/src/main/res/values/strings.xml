@@ -21,8 +21,8 @@
     <string name="imageview_srccam">Fish-eye camera image</string>
     <string name="imageview_dstcam">Transformed camera image</string>
     <string name="imageview_dstcam_overlay">Transformed camera image overlay</string>
-    <string name="px">px</string>
-    <string name="x">x</string>
+    <string name="px">&#032;px</string>
+    <string name="image_size_separator">&#032;x&#032;</string>
     <string name="y">y</string>
     <string name="other">Other</string>
     <string name="buy_pro_for_high_resolution">Buy the Pro version for saving high resolution images;) (Coming soon)</string>

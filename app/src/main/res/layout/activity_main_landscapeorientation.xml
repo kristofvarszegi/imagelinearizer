@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraintLayoutAll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
@@ -13,19 +14,18 @@
         android:layout_height="match_parent"
         android:background="@drawable/camview_background"
         android:contentDescription="@string/imageview_dstcam"
-        android:gravity="end"
         android:scaleType="fitXY"
         android:adjustViewBounds="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
     <ImageView
         android:id="@+id/imageViewDstCamOverlay"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:background="@android:color/transparent"
         android:contentDescription="@string/imageview_dstcam_overlay"
-        android:gravity="end"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -48,10 +48,12 @@
             android:text="@string/src_cam_title"
             android:textColor="@android:color/white"
             android:textSize="8sp" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/colorPrimaryDark" />
+
         <ImageView
             android:id="@+id/imageViewSrcCam"
             android:layout_width="wrap_content"
@@ -59,7 +61,7 @@
             android:adjustViewBounds="true"
             android:background="@drawable/camview_background"
             android:contentDescription="@string/imageview_srccam"
-            android:gravity="right"
+            android:gravity="end"
             android:scaleType="fitXY" />
     </LinearLayout>
 

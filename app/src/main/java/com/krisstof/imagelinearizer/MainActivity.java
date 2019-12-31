@@ -4,19 +4,17 @@
  * - Check for updates and update
  * - Help
  * - Tests
- * - RELEASE FREE
- * - Online camera input
+ * - RELEASE
  *
- * Implemented
- * - Load image from Gallery
- * - Save image to Gallery
- * - Modify src, dst cam parameters via sliders
+ * Known issues
+ * - Grid overlay doesn't follow dst image while a text field is changed, only after the text field losing focus
  */
 
 package com.krisstof.imagelinearizer;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -80,8 +78,8 @@ public class MainActivity extends AppCompatActivity {
   private static final float GRIDOVERLAY_THICKLINEWIDTH_PX = 2.f;
   private static final int GRIDOVERLAY_CELLCOUNT = 10;
 
-  private static final int MAX_IMAGE_WIDTH_PX = 7680;
-  private static final int MAX_IMAGE_HEIGHT_PX = MAX_IMAGE_WIDTH_PX;
+  private static final int MIN_IMAGE_SIZE_PX = 1;
+  private static final int MAX_IMAGE_SIZE_PX = 7680;
   private static final int BASELINE_DISPLAYDENSITY_DP = 160;
   private static final String FLOAT_FORMAT_STR = "%.2f";
 
@@ -104,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
   private static final ReleaseConfig FREE_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.FREE,
       new int[]{320, 180});
   private static final ReleaseConfig PRO_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.PRO,
-      new int[]{MAX_IMAGE_WIDTH_PX, MAX_IMAGE_HEIGHT_PX});
+      new int[]{MAX_IMAGE_SIZE_PX, MAX_IMAGE_SIZE_PX});
   private static final ReleaseConfig RELEASECONFIG = FREE_RELEASECONFIG;
   //private static final ReleaseConfig RELEASECONFIG = PRO_RELEASECONFIG;
 
@@ -213,8 +211,10 @@ public class MainActivity extends AppCompatActivity {
     BitmapFactory.Options bitmapFactoryOptions = new BitmapFactory.Options();
     bitmapFactoryOptions.inDensity = (int) ((float) BASELINE_DISPLAYDENSITY_DP
         * resourceDisplayDensity);
-    final int imageResourceId = R.drawable.citycar_185deg_600x400;  // Pp = img center
+    //final int imageResourceId = R.drawable.citycar_185deg_600x400;  // Pp = img center
     //final int imageResourceId = R.drawable.cityview_150deg_4256x2832;
+    final int imageResourceId = R.drawable.factoryhall_150deg_1920x1280;
+    //final int imageResourceId = R.drawable.factoryhall_150deg_5184x3456;
     //final int imageResourceId = R.drawable.ladderboy_180_3025x2235;
     //final int imageResourceId = R.drawable.libraryhallway_195deg_3910x2607;
     //final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
@@ -237,7 +237,41 @@ public class MainActivity extends AppCompatActivity {
     mDstCamView = findViewById(R.id.imageViewDstCam);
     mDstCamOverlayView = findViewById(R.id.imageViewDstCamOverlay);
     mDstCamOverlayView.post(new Runnable() {
-      public void run() { updateImages(); }
+      public void run() {
+        SeekBar seekBarSrcCamHfovDeg = findViewById(R.id.seekBarSrcCamHfovDeg);
+        seekBarSrcCamHfovDeg.setProgress(valueScaleToSeekBarScale(seekBarSrcCamHfovDeg,
+            mSrcCamParameters.hfovDeg, SRCCAM_HFOVDEG_MAX));
+        SeekBar seekBarSrcCamFocalOffset = findViewById(R.id.seekBarSrcCamFocalOffset);
+        seekBarSrcCamFocalOffset.setProgress(valueScaleToSeekBarScale(seekBarSrcCamFocalOffset,
+            mSrcCamParameters.focalOffset, SRCCAM_FOCALLENGTH_MAX));
+        SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
+        seekBarSrcCamPrincipalPointXPx.setProgress(valueScaleToSeekBarScale(
+            seekBarSrcCamPrincipalPointXPx, mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
+        SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointYPx);
+        seekBarSrcCamPrincipalPointYPx.setProgress(valueScaleToSeekBarScale(
+            seekBarSrcCamPrincipalPointYPx, mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
+
+        SeekBar seekBarDstCamHfovDeg = findViewById(R.id.seekBarDstCamHfovDeg);
+        seekBarDstCamHfovDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamHfovDeg,
+            mDstCamParameters.hfovDeg, DSTCAM_HFOVDEG_MAX));
+        EditText editTextDstImageWidthPx = findViewById(R.id.editTextDstImageWidthPx);
+        editTextDstImageWidthPx.setText(String.format(Locale.US, "%d",
+            mDstCamParameters.imageWidthPx));
+        EditText editTextDstImageHeightPx = findViewById(R.id.editTextDstImageHeightPx);
+        editTextDstImageHeightPx.setText(String.format(Locale.US, "%d",
+            mDstCamParameters.imageHeightPx));
+        SeekBar seekBarDstCamXRotDeg = findViewById(R.id.seekBarDstCamXRotDeg);
+        seekBarDstCamXRotDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamXRotDeg,
+            mDstCamParameters.xRotDeg + 0.5f * DSTCAM_XROTDEG_MAX, DSTCAM_XROTDEG_MAX));
+        SeekBar seekBarDstCamYRotDeg = findViewById(R.id.seekBarDstCamYRotDeg);
+        seekBarDstCamYRotDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamYRotDeg,
+            mDstCamParameters.yRotDeg + 0.5f * DSTCAM_YROTDEG_MAX, DSTCAM_YROTDEG_MAX));
+        SeekBar seekBarDstCamZRotDeg = findViewById(R.id.seekBarDstCamZRotDeg);
+        seekBarDstCamZRotDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamZRotDeg,
+            mDstCamParameters.zRotDeg + 0.5f * DSTCAM_ZROTDEG_MAX, DSTCAM_ZROTDEG_MAX));
+
+        updateImages();
+      }
     });
 
     SeekBar seekBarSrcCamHfovDeg = findViewById(R.id.seekBarSrcCamHfovDeg);
@@ -250,10 +284,14 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "updateImages() for seekBarSrcCamHfovDeg...");
         updateImages();
       }
+
       @Override
-      public void onStartTrackingTouch(SeekBar seekbar) {}
+      public void onStartTrackingTouch(SeekBar seekbar) {
+      }
+
       @Override
-      public void onStopTrackingTouch(SeekBar seekbar) {}
+      public void onStopTrackingTouch(SeekBar seekbar) {
+      }
     });
     SeekBar seekBarSrcCamFocalOffset = findViewById(R.id.seekBarSrcCamFocalOffset);
     seekBarSrcCamFocalOffset.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -266,12 +304,16 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "updateImages() for seekBarSrcCamFocalOffset...");
         updateImages();
       }
+
       @Override
-      public void onStartTrackingTouch(SeekBar seekbar) {}
+      public void onStartTrackingTouch(SeekBar seekbar) {
+      }
+
       @Override
-      public void onStopTrackingTouch(SeekBar seekbar) {}
+      public void onStopTrackingTouch(SeekBar seekbar) {
+      }
     });
-    SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointX);
+    SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
     seekBarSrcCamPrincipalPointXPx.setMax(
         (int) ((double) mSrcImage.getWidth() * Math.pow(10., PRINCIPALPOINT_SEEKBAR_DECIMALS)));
     seekBarSrcCamPrincipalPointXPx.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -285,12 +327,16 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "updateImages() for seekBarSrcCamPrincipalPointXPx...");
         updateImages();
       }
+
       @Override
-      public void onStartTrackingTouch(SeekBar seekbar) {}
+      public void onStartTrackingTouch(SeekBar seekbar) {
+      }
+
       @Override
-      public void onStopTrackingTouch(SeekBar seekbar) {}
+      public void onStopTrackingTouch(SeekBar seekbar) {
+      }
     });
-    SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointY);
+    SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointYPx);
     seekBarSrcCamPrincipalPointYPx.setMax(
         (int) ((double) mSrcImage.getHeight() * Math.pow(10., PRINCIPALPOINT_SEEKBAR_DECIMALS)));
     seekBarSrcCamPrincipalPointYPx.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -305,10 +351,14 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "updateImages() for seekBarSrcCamPrincipalPointYPx...");
         updateImages();
       }
+
       @Override
-      public void onStartTrackingTouch(SeekBar seekbar) {}
+      public void onStartTrackingTouch(SeekBar seekbar) {
+      }
+
       @Override
-      public void onStopTrackingTouch(SeekBar seekbar) {}
+      public void onStopTrackingTouch(SeekBar seekbar) {
+      }
     });
 
     Spinner spinnerDstCamGeometry = findViewById(R.id.spinnerDstCamGeometry);
@@ -321,8 +371,10 @@ public class MainActivity extends AppCompatActivity {
             mContext);
         updateImages();
       }
+
       @Override
-      public void onNothingSelected(AdapterView<?> parentView) {}
+      public void onNothingSelected(AdapterView<?> parentView) {
+      }
     });
     spinnerDstCamGeometry.setSelection(mDstCamParameters.getGeometryId());
     SeekBar seekBarDstCamHfovDeg = findViewById(R.id.seekBarDstCamHfovDeg);
@@ -335,10 +387,14 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "updateImages() for seekBarDstCamHfovDeg...");
         updateImages();
       }
+
       @Override
-      public void onStartTrackingTouch(SeekBar seekbar) {}
+      public void onStartTrackingTouch(SeekBar seekbar) {
+      }
+
       @Override
-      public void onStopTrackingTouch(SeekBar seekbar) {}
+      public void onStopTrackingTouch(SeekBar seekbar) {
+      }
     });
     EditText editTextDstImageWidthPx = findViewById(R.id.editTextDstImageWidthPx);
     editTextDstImageWidthPx.addTextChangedListener(new TextWatcher() {
@@ -348,18 +404,31 @@ public class MainActivity extends AppCompatActivity {
       public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
       @Override
       public void onTextChanged(CharSequence s, int start, int before, int count) {
-        boolean needToReset = false;
-        if (s.length() > 0) {
-          int newDstImageWidthPx = Integer.parseInt(s.toString());
-          if (newDstImageWidthPx > 0 && newDstImageWidthPx <= MAX_IMAGE_WIDTH_PX) {
-            mDstCamParameters.imageWidthPx = newDstImageWidthPx;
-          } else {
-            needToReset = true;
-          }
+        final Integer readValue = readValueIfTextIsValid(
+            (EditText) findViewById(R.id.editTextDstImageWidthPx), mDstCamParameters.imageWidthPx,
+            false);
+        if (readValue != null) {
+          mDstCamParameters.imageWidthPx = readValue;
+          updateImages();
         }
-        if (needToReset) {
-          ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(String.format(Locale.US,
-              "%d", mDstCamParameters.imageWidthPx));
+      }
+    });
+    editTextDstImageWidthPx.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+      @Override
+      public void onFocusChange(View v, boolean hasFocus) {
+        if (!hasFocus) {
+          final Integer readValue = readValueIfTextIsValid((EditText) v,
+              mDstCamParameters.imageWidthPx, true);
+          if (readValue != null) {
+            mDstCamParameters.imageWidthPx = readValue;
+            ConstraintLayout constraintLayoutAll = findViewById(R.id.constraintLayoutAll);
+            if (constraintLayoutAll != null) {
+            //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
+              updateImages();
+            }
+          }
+          Log.d(TAG, "Hiding keyboard...");
+          Utils.hideKeyboard(v, mContext);
         }
       }
     });
@@ -372,18 +441,27 @@ public class MainActivity extends AppCompatActivity {
       public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
       @Override
       public void onTextChanged(CharSequence s, int start, int before, int count) {
-        boolean needToReset = false;
-        if (s.length() > 0) {
-          int newDstImageHeightPx = Integer.parseInt(s.toString());
-          if (newDstImageHeightPx > 0 && newDstImageHeightPx <= MAX_IMAGE_HEIGHT_PX) {
-            mDstCamParameters.imageHeightPx = newDstImageHeightPx;
-          } else {
-            needToReset = true;
-          }
+        final Integer readValue = readValueIfTextIsValid(
+            (EditText) findViewById(R.id.editTextDstImageHeightPx), mDstCamParameters.imageHeightPx,
+            false);
+        if (readValue != null) {
+          mDstCamParameters.imageHeightPx = readValue;
+          updateImages();
         }
-        if (needToReset) {
-          ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(String.format(Locale.US,
-              "%d", mDstCamParameters.imageHeightPx));
+      }
+    });
+    editTextDstImageHeightPx.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+      @Override
+      public void onFocusChange(View v, boolean hasFocus) {
+        if (!hasFocus) {
+          final Integer readValue = readValueIfTextIsValid((EditText) v,
+              mDstCamParameters.imageHeightPx, true);
+          if (readValue != null) {
+            mDstCamParameters.imageHeightPx = readValue;
+            updateImages();
+          }
+          Log.d(TAG, "Hiding keyboard...");
+          Utils.hideKeyboard(v, mContext);
         }
       }
     });
@@ -399,10 +477,14 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "updateImages() for seekBarDstCamXRotDeg...");
         updateImages();
       }
+
       @Override
-      public void onStartTrackingTouch(SeekBar seekbar) {}
+      public void onStartTrackingTouch(SeekBar seekbar) {
+      }
+
       @Override
-      public void onStopTrackingTouch(SeekBar seekbar) {}
+      public void onStopTrackingTouch(SeekBar seekbar) {
+      }
     });
     SeekBar seekBarDstCamYRotDeg = findViewById(R.id.seekBarDstCamYRotDeg);
     seekBarDstCamYRotDeg.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -415,10 +497,14 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "updateImages() for seekBarDstCamYRotDeg...");
         updateImages();
       }
+
       @Override
-      public void onStartTrackingTouch(SeekBar seekbar) {}
+      public void onStartTrackingTouch(SeekBar seekbar) {
+      }
+
       @Override
-      public void onStopTrackingTouch(SeekBar seekbar) {}
+      public void onStopTrackingTouch(SeekBar seekbar) {
+      }
     });
     SeekBar seekBarDstCamZRotDeg = findViewById(R.id.seekBarDstCamZRotDeg);
     seekBarDstCamZRotDeg.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -431,33 +517,15 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "updateImages() for seekBarDstCamXRotDeg...");
         updateImages();
       }
+
       @Override
-      public void onStartTrackingTouch(SeekBar seekbar) {}
+      public void onStartTrackingTouch(SeekBar seekbar) {
+      }
+
       @Override
-      public void onStopTrackingTouch(SeekBar seekbar) {}
+      public void onStopTrackingTouch(SeekBar seekbar) {
+      }
     });
-
-    seekBarSrcCamHfovDeg.setProgress(valueScaleToSeekBarScale(seekBarSrcCamHfovDeg,
-        mSrcCamParameters.hfovDeg, SRCCAM_HFOVDEG_MAX));
-    seekBarSrcCamFocalOffset.setProgress(valueScaleToSeekBarScale(seekBarSrcCamFocalOffset,
-        mSrcCamParameters.focalOffset, SRCCAM_FOCALLENGTH_MAX));
-    seekBarSrcCamPrincipalPointXPx.setProgress(valueScaleToSeekBarScale(
-        seekBarSrcCamPrincipalPointXPx, mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
-    seekBarSrcCamPrincipalPointYPx.setProgress(valueScaleToSeekBarScale(
-        seekBarSrcCamPrincipalPointYPx, mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
-
-    seekBarDstCamHfovDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamHfovDeg,
-        mDstCamParameters.hfovDeg, DSTCAM_HFOVDEG_MAX));
-    editTextDstImageWidthPx.setText(String.format(Locale.US, "%d",
-        mDstCamParameters.imageWidthPx));
-    editTextDstImageHeightPx.setText(String.format(Locale.US, "%d",
-        mDstCamParameters.imageHeightPx));
-    seekBarDstCamXRotDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamXRotDeg,
-        mDstCamParameters.xRotDeg + 0.5f * DSTCAM_XROTDEG_MAX, DSTCAM_XROTDEG_MAX));
-    seekBarDstCamYRotDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamYRotDeg,
-        mDstCamParameters.yRotDeg + 0.5f * DSTCAM_YROTDEG_MAX, DSTCAM_YROTDEG_MAX));
-    seekBarDstCamZRotDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamZRotDeg,
-        mDstCamParameters.zRotDeg + 0.5f * DSTCAM_ZROTDEG_MAX, DSTCAM_ZROTDEG_MAX));
 
     Switch switchAdvancedParameters = findViewById(R.id.switchAdvancedParameters);
     switchAdvancedParameters.setOnCheckedChangeListener(
@@ -467,7 +535,6 @@ public class MainActivity extends AppCompatActivity {
             updateCameraParametersPanel();
           }
         });
-
     Switch switchDstImageGridOverlay = findViewById(R.id.switchDstImageGridOverlay);
     switchDstImageGridOverlay.setOnCheckedChangeListener(
         new CompoundButton.OnCheckedChangeListener() {
@@ -478,6 +545,34 @@ public class MainActivity extends AppCompatActivity {
         });
 
     updateCameraParametersPanel();
+
+    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+  }
+
+  static Integer readValueIfTextIsValid(EditText editText, int existingValue,
+                                        boolean shouldResetTextIfNeeded) {
+    Integer retVal = null;
+    final String text = editText.getText().toString();
+    boolean needToResetText = false;
+    if (text.length() > 0) {
+      try {
+        int newDstImageHeightPx = Integer.parseInt(text);
+        if (newDstImageHeightPx > 0 && newDstImageHeightPx <= MAX_IMAGE_SIZE_PX) {
+          retVal = newDstImageHeightPx;
+        } else {
+          needToResetText = true;
+        }
+      } catch (NumberFormatException nfe) {
+        Log.d(TAG, Utils.stackTraceToString(nfe));
+        needToResetText = true;
+      }
+    } else {
+      needToResetText = true;
+    }
+    if (shouldResetTextIfNeeded && needToResetText) {
+      editText.setText(String.format(Locale.US, "%d", existingValue));
+    }
+    return retVal;
   }
 
   private void adjustViewsToLandscapeOrientation() {
@@ -497,9 +592,9 @@ public class MainActivity extends AppCompatActivity {
       visibility = View.GONE;
     }
     findViewById(R.id.textViewSrcCamPrincipalPointX).setVisibility(visibility);
-    findViewById(R.id.seekBarSrcCamPrincipalPointX).setVisibility(visibility);
+    findViewById(R.id.seekBarSrcCamPrincipalPointXPx).setVisibility(visibility);
     findViewById(R.id.textViewSrcCamPrincipalPointY).setVisibility(visibility);
-    findViewById(R.id.seekBarSrcCamPrincipalPointY).setVisibility(visibility);
+    findViewById(R.id.seekBarSrcCamPrincipalPointYPx).setVisibility(visibility);
     findViewById(R.id.textViewDstCamXRotDeg).setVisibility(visibility);
     findViewById(R.id.seekBarDstCamXRotDeg).setVisibility(visibility);
     findViewById(R.id.textViewDstCamYRotDeg).setVisibility(visibility);
@@ -553,8 +648,8 @@ public class MainActivity extends AppCompatActivity {
               imageUri).copy(Bitmap.Config.ARGB_8888, false);
           Log.d(TAG, "loadedImage size in onActivityResult(.): " + loadedImage.getWidth()
               + "x" + loadedImage.getHeight());
-          if (mSrcImage.getWidth() <= MAX_IMAGE_WIDTH_PX
-              && mSrcImage.getHeight() <= MAX_IMAGE_HEIGHT_PX) {
+          if (mSrcImage.getWidth() <= MAX_IMAGE_SIZE_PX
+              && mSrcImage.getHeight() <= MAX_IMAGE_SIZE_PX) {
             mSrcImage = loadedImage;
             mSrcCamParameters = new FisheyeParameters(mSrcImage);
             //final float pixelDensity = 1.0f;
@@ -569,11 +664,11 @@ public class MainActivity extends AppCompatActivity {
             updateImages();
 
             ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
-            SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointX);
+            SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
             seekBarSrcCamPrincipalPointXPx.setProgress(
                 valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointXPx,
                     mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
-            SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointY);
+            SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointYPx);
             seekBarSrcCamPrincipalPointYPx.setProgress(
                 valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
                     mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
@@ -583,8 +678,8 @@ public class MainActivity extends AppCompatActivity {
                 String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
           } else {
             Toast.makeText(this, "Output image must be max. "
-                + MAX_IMAGE_WIDTH_PX + " pixels wide and max. "
-                + MAX_IMAGE_HEIGHT_PX + " pixels high", Toast.LENGTH_LONG).show();
+                + MAX_IMAGE_SIZE_PX + " pixels wide and max. "
+                + MAX_IMAGE_SIZE_PX + " pixels high", Toast.LENGTH_LONG).show();
           }
         }
       } catch (Exception e) {
@@ -655,8 +750,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     mDstImage = mImageTransformer.linearize(mSrcImage, mSrcCamParameters, mDstCamParameters);
-
     mDstCamView.setImageBitmap(mDstImage);
+
+    ConstraintLayout constraintLayoutAll = findViewById(R.id.constraintLayoutAll);
+    if (constraintLayoutAll != null) {
+      //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
+        final float dstImageWPerH = (float) mDstImage.getWidth() / (float) mDstImage.getHeight();
+        final float allWPerH = (float) constraintLayoutAll.getWidth()
+            / (float) constraintLayoutAll.getHeight();
+        ImageView imageViewDstCam = findViewById(R.id.imageViewDstCam);
+        ViewGroup.LayoutParams layoutParams = imageViewDstCam.getLayoutParams();
+        if (dstImageWPerH > allWPerH) {
+          layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+          layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+          //ConstraintLayout.LayoutParams layoutParams =
+          //    (ConstraintLayout.LayoutParams) imageViewDstCam.getLayoutParams();
+          //ConstraintLayout.LayoutParams layoutParams = new ConstraintLayout.LayoutParams(
+          //    ConstraintLayout.LayoutParams.MATCH_PARENT, ConstraintLayout.LayoutParams.WRAP_CONTENT);
+
+        } else {
+          layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+          layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+        }
+        imageViewDstCam.setLayoutParams(layoutParams);
+        //findViewById(R.id.imageViewDstCamOverlay).setLayoutParams(layoutParams);
+      //}
+    } else {
+      Log.d(TAG, "Top-level layout (constraintLayoutAll) is null");
+    }
+
     if (((Switch) findViewById(R.id.switchDstImageGridOverlay)).isChecked()) {
       Log.d(TAG, "  mDstCamView w, h: " + mDstCamView.getWidth() + ", "
           + mDstCamView.getHeight());

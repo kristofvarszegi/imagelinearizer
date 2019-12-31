@@ -1,6 +1,6 @@
 package com.krisstof.imagelinearizer;
 
-import android.content.ContentResolver;
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -14,6 +14,8 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 import java.io.File;
@@ -163,5 +165,15 @@ abstract class Utils {
       }
     }
     return gridOverlayImage;
+  }
+
+  static void hideKeyboard(View view, Context context) {
+    try {
+      InputMethodManager imm = (InputMethodManager) context.getSystemService(
+          Activity.INPUT_METHOD_SERVICE);
+      imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    } catch (NullPointerException npe) {
+      Log.e(TAG, stackTraceToString(npe));
+    }
   }
 }
