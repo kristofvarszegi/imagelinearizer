@@ -10,13 +10,13 @@
 
     <ImageView
         android:id="@+id/imageViewDstCam"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
         android:background="@drawable/camview_background"
         android:contentDescription="@string/imageview_dstcam"
         android:gravity="center_vertical"
-        android:scaleType="fitXY"
+        android:scaleType="fitCenter"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"

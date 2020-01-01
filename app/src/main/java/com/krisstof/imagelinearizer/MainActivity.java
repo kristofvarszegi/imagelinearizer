@@ -4,8 +4,6 @@
  * - Check for updates and update
  * - Help
  * - Tests
- * - Bug: portait -> landscape -> portrait = dst imageview filling entire screen
- * - Bug: left zeros stay in edittexts
  * - RELEASE
  *
  * Known issues
@@ -200,11 +198,9 @@ public class MainActivity extends AppCompatActivity {
     switch (deviceOrientation) {
       case ORIENTATION_LANDSCAPE:
         setContentView(R.layout.activity_main_landscapeorientation);
-        adjustViewsToLandscapeOrientation();
         break;
       case ORIENTATION_PORTRAIT:
         setContentView(R.layout.activity_main_portraitorientation);
-        adjustViewsToPortraitOrientation();
         break;
       default:
         throw new RuntimeException("Invalid device orientation: " + deviceOrientation);
@@ -220,14 +216,14 @@ public class MainActivity extends AppCompatActivity {
         * resourceDisplayDensity);
     //final int imageResourceId = R.drawable.citycar_185deg_600x400;  // Pp = img center
     //final int imageResourceId = R.drawable.cityview_150deg_4256x2832;
-    //final int imageResourceId = R.drawable.factoryhall_150deg_640x427;
+    final int imageResourceId = R.drawable.factoryhall_150deg_640x427;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__bmp;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__jpeg;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__png;
     //final int imageResourceId = R.drawable.factoryhall_150deg_5184x3456;
     //final int imageResourceId = R.drawable.ladderboy_180_3025x2235;
     //final int imageResourceId = R.drawable.libraryhallway_195deg_3910x2607;
-    final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
+    //final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
     //final int imageResourceId = R.drawable.redcityroad_120deg_3000x2000;  // Pp not img center
     mSrcImage = BitmapFactory.decodeResource(getResources(),
         imageResourceId, bitmapFactoryOptions)
@@ -285,21 +281,19 @@ public class MainActivity extends AppCompatActivity {
         seekBarDstCamYawDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamYawDeg,
             mDstCamParameters.yawDeg + 0.5f * DSTCAM_YAW_SPAN_DEG, DSTCAM_YAW_SPAN_DEG));
 
-        /*DisplayMetrics displayMetrics = new DisplayMetrics();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         final int deviceOrientation = Utils.getDeviceOrientation(displayMetrics);
         switch (deviceOrientation) {
           case ORIENTATION_LANDSCAPE:
-            setContentView(R.layout.activity_main_landscapeorientation);
             adjustViewsToLandscapeOrientation();
             break;
           case ORIENTATION_PORTRAIT:
-            setContentView(R.layout.activity_main_portraitorientation);
             adjustViewsToPortraitOrientation();
             break;
           default:
             throw new RuntimeException("Invalid device orientation: " + deviceOrientation);
-        }*/
+        }
 
         updateImages();
       }
@@ -592,7 +586,7 @@ public class MainActivity extends AppCompatActivity {
   }
 
   Integer readValueIfTextIsValid(EditText editText, int existingValue,
-                                        boolean resetTextIfZero) {
+                                 boolean resetTextIfZero) {
     Integer retVal = null;
     final String text = editText.getText().toString();
     boolean needToResetText = false;
@@ -601,6 +595,9 @@ public class MainActivity extends AppCompatActivity {
         int newDstImageHeightPx = Integer.parseInt(text);
         if (newDstImageHeightPx > 0 && newDstImageHeightPx <= MAX_IMAGE_SIZE_PX) {
           retVal = newDstImageHeightPx;
+          if (text.charAt(0) == '0') {
+            editText.setText(String.format(Locale.US, "%d", retVal));
+          }
         } else {
           needToResetText = true;
           if (newDstImageHeightPx > MAX_IMAGE_SIZE_PX) {
@@ -655,6 +652,18 @@ public class MainActivity extends AppCompatActivity {
   private void adjustViewsToPortraitOrientation() {
     DisplayMetrics displayMetrics = new DisplayMetrics();
     getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
+    /*ImageView imageViewDstCam = findViewById(R.id.imageViewDstCam);
+    Log.d(TAG, "imageViewDstCam layout w, h: " + imageViewDstCam.getLayoutParams().width + ", "
+        + imageViewDstCam.getLayoutParams().height);
+    int newWidth = displayMetrics.widthPixels;
+    int newHeight = (int) ((float) displayMetrics.widthPixels
+        * (float) mDstImage.getHeight() / (float) mDstImage.getWidth());
+    Log.d(TAG, "Setting imageViewDstCam layout w, h to: " + newWidth + ", " + newHeight);
+    imageViewDstCam.getLayoutParams().width = newWidth;
+    imageViewDstCam.getLayoutParams().height = newHeight;
+    Log.d(TAG, "imageViewDstCam w, h: " + imageViewDstCam.getLayoutParams().width + ", "
+        + imageViewDstCam.getLayoutParams().height);*/
 
     LinearLayout layout = findViewById(R.id.linearLayoutCameraParameters);
     ViewGroup.LayoutParams layoutsLayoutParams = layout.getLayoutParams();
@@ -878,8 +887,8 @@ public class MainActivity extends AppCompatActivity {
       Log.d(TAG, "  mDstCamView w, h: " + mDstCamView.getWidth() + ", "
           + mDstCamView.getHeight());
       if (mDstCamView.getWidth() > 0 && mDstCamView.getHeight() > 0) {
-        int gridCellSizePx = Math.max(mDstCamView.getWidth(), mDstCamView.getHeight())
-            / GRIDOVERLAY_CELLCOUNT;
+        int gridCellSizePx = Math.max((int) ((float) Math.max(mDstCamView.getWidth(), mDstCamView.getHeight())
+            / (float) GRIDOVERLAY_CELLCOUNT), 2);
         /*int gridOverlayWidthPx;
         int gridOverlayHeightPx;
         final int deviceOrientation = Utils.getDeviceOrientation(displayMetrics);
@@ -905,7 +914,8 @@ public class MainActivity extends AppCompatActivity {
                 getResources().getColor(R.color.colorAccent),
                 getResources().getColor(R.color.colorPrimary)));*/
         mDstCamOverlayView.setImageBitmap(
-            Utils.createGridOverlayImage(mDstCamView.getWidth(), mDstCamView.getHeight(),
+            Utils.createGridOverlayImage(mDstCamView.getWidth(), mDstCamView.getWidth()
+                    * mDstImage.getHeight() / mDstImage.getWidth(),
                 gridCellSizePx, GRIDOVERLAY_THICKLINEWIDTH_PX,
                 getResources().getColor(R.color.colorAccent),
                 getResources().getColor(R.color.colorPrimary)));

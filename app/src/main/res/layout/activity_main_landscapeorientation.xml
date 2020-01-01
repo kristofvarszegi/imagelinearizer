@@ -62,7 +62,7 @@
             android:background="@drawable/camview_background"
             android:contentDescription="@string/imageview_srccam"
             android:gravity="end"
-            android:scaleType="fitXY" />
+            android:scaleType="fitCenter" />
     </LinearLayout>
 
     <include

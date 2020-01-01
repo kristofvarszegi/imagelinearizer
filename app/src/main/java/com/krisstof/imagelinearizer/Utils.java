@@ -164,6 +164,9 @@ abstract class Utils {
         canvas.drawLine(0, yL2, gridOverlayImage.getWidth(), yL2, gridLinesPaint);
       }
     }
+    canvas.drawLine(0, 0, gridOverlayImage.getWidth(), 0, gridLinesPaint);
+    canvas.drawLine(0, gridOverlayImage.getHeight(), gridOverlayImage.getWidth(),
+        gridOverlayImage.getHeight(), gridLinesPaint);
     return gridOverlayImage;
   }
 
