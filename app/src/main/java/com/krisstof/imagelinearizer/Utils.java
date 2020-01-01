@@ -30,7 +30,13 @@ import java.util.TimeZone;
 
 abstract class Utils {
   private static final String TAG = Utils.class.getSimpleName();
+
   private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+
+  static final String BMP_STR = "bmp";
+  static final String JPEG_STR = "jpeg";
+  static final String JPG_STR = "jpg";
+  static final String PNG_STR = "png";
 
   static int getDeviceOrientation(DisplayMetrics displayMetrics) {
     if (displayMetrics.widthPixels <= displayMetrics.heightPixels) {
@@ -68,7 +74,14 @@ abstract class Utils {
     } else {
       try {
         FileOutputStream outFStream = new FileOutputStream(imageFile);
-        image.compress(Bitmap.CompressFormat.JPEG, 90, outFStream);
+        if (imageFilename.endsWith(JPG_STR)) {
+          image.compress(Bitmap.CompressFormat.JPEG, 90, outFStream);
+        } else if (imageFilename.endsWith(PNG_STR)) {
+          image.compress(Bitmap.CompressFormat.PNG, 100, outFStream);
+        } else {
+          throw new IllegalArgumentException("Extension of image filename \'" + imageFilename
+              + "\' is not supported");
+        }
         outFStream.flush();
         outFStream.close();
       } catch (Exception e) {

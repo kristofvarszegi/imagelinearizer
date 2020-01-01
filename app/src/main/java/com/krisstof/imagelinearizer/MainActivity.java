@@ -63,11 +63,12 @@ public class MainActivity extends AppCompatActivity {
   private static final String TAG = MainActivity.class.getSimpleName();
 
   private static final int LOADIMAGEFROMGALLERY_REQUESTCODE = 100;
-  private static final String[] SUPPORTED_IMAGE_EXTENSIONS = {"bmp", "jpeg", "jpg", "png"};
+  private static final String[] SUPPORTED_IMAGE_EXTENSIONS = {Utils.BMP_STR, Utils.JPEG_STR,
+      Utils.JPG_STR, Utils.PNG_STR};
   private static final int WRITEEXTERNALSTORAGE_REQUESTCODE = 200;
   private static final float SMALLIMAGE_SIZE_RATIO = 0.2f;
   private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE = 0.3f;
-  private static final float CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE = 0.8f;
+  private static final float CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE = 0.7f;
   private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_PORTRAIT = 1.f;
   private static final float CAMERAPARAMETERSPANEL_HEIGHT_RATIO_PORTRAIT = 0.3f;
   private static final int MAX_SRCIMAGETITLE_LENGTH = 32;
@@ -86,6 +87,9 @@ public class MainActivity extends AppCompatActivity {
   private static final int MAX_IMAGE_SIZE_PX = 7680;
   private static final int BASELINE_DISPLAYDENSITY_DP = 160;
   private static final String FLOAT_FORMAT_STR = "%.2f";
+
+  private static final String STATUS_STR_SAVING_IMAGE = "Saving image...";
+  private static final String STATUS_STR_LOADING_IMAGE = "Loading image...";
 
   enum RELEASE_TYPE {FREE, PRO}
 
@@ -107,8 +111,8 @@ public class MainActivity extends AppCompatActivity {
       new int[]{320, 180});
   private static final ReleaseConfig PRO_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.PRO,
       new int[]{MAX_IMAGE_SIZE_PX, MAX_IMAGE_SIZE_PX});
-  private static final ReleaseConfig RELEASECONFIG = FREE_RELEASECONFIG;
-  //private static final ReleaseConfig RELEASECONFIG = PRO_RELEASECONFIG;
+  //private static final ReleaseConfig RELEASECONFIG = FREE_RELEASECONFIG;
+  private static final ReleaseConfig RELEASECONFIG = PRO_RELEASECONFIG;
 
   private Context mContext;
 
@@ -216,13 +220,14 @@ public class MainActivity extends AppCompatActivity {
         * resourceDisplayDensity);
     //final int imageResourceId = R.drawable.citycar_185deg_600x400;  // Pp = img center
     //final int imageResourceId = R.drawable.cityview_150deg_4256x2832;
-    final int imageResourceId = R.drawable.factoryhall_150deg_640x427;
+    //final int imageResourceId = R.drawable.factoryhall_150deg_640x427;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__bmp;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__jpeg;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__png;
     //final int imageResourceId = R.drawable.factoryhall_150deg_5184x3456;
     //final int imageResourceId = R.drawable.ladderboy_180_3025x2235;
     //final int imageResourceId = R.drawable.libraryhallway_195deg_3910x2607;
+    final int imageResourceId = R.drawable.librarytable_195deg_640x427;  // Pp = img center
     //final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
     //final int imageResourceId = R.drawable.redcityroad_120deg_3000x2000;  // Pp not img center
     mSrcImage = BitmapFactory.decodeResource(getResources(),
@@ -580,6 +585,8 @@ public class MainActivity extends AppCompatActivity {
           }
         });
 
+    findViewById(R.id.textViewStatus).setVisibility(View.INVISIBLE);
+
     updateCameraParametersPanelVisibilities();
 
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -813,7 +820,11 @@ public class MainActivity extends AppCompatActivity {
       //Toast.makeText(this, "App does not have permission to write to storage. Adjust app permissions in your App Settings", Toast.LENGTH_SHORT).show();
     } else {
       Log.i(TAG, "App has write permission");
-      String imageFilename = "linear_" + Utils.getDateTimeStr() + ".jpg";
+      //String imageFilename = "linear_" + Utils.getDateTimeStr() + "." + Utils.JPG_STR;
+      String imageFilename = "linear_" + Utils.getDateTimeStr() + "." + Utils.PNG_STR;
+      TextView textViewStatus = findViewById(R.id.textViewStatus);
+      textViewStatus.setText(STATUS_STR_SAVING_IMAGE);
+      textViewStatus.setVisibility(View.VISIBLE);
       switch (RELEASECONFIG.releaseType) {
         case FREE:
           final Bitmap reducedDstImage = Utils.reduceImageToFit(mDstImage,
@@ -834,6 +845,8 @@ public class MainActivity extends AppCompatActivity {
           }
           break;
       }
+      textViewStatus.setVisibility(View.INVISIBLE);
+      textViewStatus.setText("");
     }
   }
 
@@ -871,7 +884,6 @@ public class MainActivity extends AppCompatActivity {
         //    (ConstraintLayout.LayoutParams) imageViewDstCam.getLayoutParams();
         //ConstraintLayout.LayoutParams layoutParams = new ConstraintLayout.LayoutParams(
         //    ConstraintLayout.LayoutParams.MATCH_PARENT, ConstraintLayout.LayoutParams.WRAP_CONTENT);
-
       } else {
         layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
         layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;

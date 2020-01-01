@@ -12,9 +12,9 @@
         android:id="@+id/imageViewDstCam"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:background="@drawable/camview_background"
+        android:background="@drawable/view_background"
         android:contentDescription="@string/imageview_dstcam"
-        android:scaleType="fitXY"
+        android:scaleType="fitCenter"
         android:adjustViewBounds="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -34,7 +34,7 @@
         android:id="@+id/linearLayoutSrcCamView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/camview_background"
+        android:background="@drawable/view_background"
         android:orientation="vertical"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -59,7 +59,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:adjustViewBounds="true"
-            android:background="@drawable/camview_background"
+            android:background="@drawable/view_background"
             android:contentDescription="@string/imageview_srccam"
             android:gravity="end"
             android:scaleType="fitCenter" />
@@ -72,4 +72,18 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textViewStatus"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/view_background"
+        android:text="@string/status"
+        android:textColor="@android:color/white"
+        android:textSize="40sp"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
