@@ -1,8 +1,11 @@
 /*
  * TODO
+ * - Check jpg, jpeg, png, bmp
  * - Check small image
  * - Check max sized image
- * - Check pp offsetted image
+ * - Check too wide image
+ * - Check too high image
+ * - Check pp-offsetted image
  * - Check dst image size X field
  * - Check dst image size Y field
  * - Check 3 warped images against GT output image

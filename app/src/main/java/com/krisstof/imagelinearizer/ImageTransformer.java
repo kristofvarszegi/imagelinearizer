@@ -32,8 +32,8 @@ final class ImageTransformer {
     Log.d(TAG, "  dst hfovDeg: " + dstCamParameters.hfovDeg);
     Log.d(TAG, "  dst imageWidthPx, HeightPx: " + dstCamParameters.imageWidthPx + ", "
         + dstCamParameters.imageHeightPx);
-    Log.d(TAG, "  dst xRotDeg, yRotDeg, zRotDeg: " + dstCamParameters.xRotDeg + ", "
-        + dstCamParameters.yRotDeg + ", " + dstCamParameters.zRotDeg);
+    Log.d(TAG, "  dst rollDeg, pitchDeg, yawDeg: " + dstCamParameters.rollDeg + ", "
+        + dstCamParameters.pitchDeg + ", " + dstCamParameters.yawDeg);
     Allocation srcImageAllocation = Allocation.createFromBitmap(mRenderScript, srcImage);
     //Log.d(TAG, "srcImageAllocation pixel count: " + srcImageAllocation.getBytesSize() / 4);
     mLinearizeScript.set_srcImage(srcImageAllocation);
@@ -47,9 +47,9 @@ final class ImageTransformer {
     mLinearizeScript.set_dstCamHfovDeg(dstCamParameters.hfovDeg);
     mLinearizeScript.set_dstImageWidthPx(dstCamParameters.imageWidthPx);
     mLinearizeScript.set_dstImageHeightPx(dstCamParameters.imageHeightPx);
-    mLinearizeScript.set_dstCamXRotDeg(dstCamParameters.xRotDeg);
-    mLinearizeScript.set_dstCamYRotDeg(dstCamParameters.yRotDeg);
-    mLinearizeScript.set_dstCamZRotDeg(dstCamParameters.zRotDeg);
+    mLinearizeScript.set_dstCamRollDeg(dstCamParameters.rollDeg);
+    mLinearizeScript.set_dstCamPitchDeg(dstCamParameters.pitchDeg);
+    mLinearizeScript.set_dstCamYawDeg(dstCamParameters.yawDeg);
     Type.Builder typeBuilder = new Type.Builder(mRenderScript, Element.RGBA_8888(mRenderScript));
     typeBuilder.setX(dstCamParameters.imageWidthPx);
     typeBuilder.setY(dstCamParameters.imageHeightPx);

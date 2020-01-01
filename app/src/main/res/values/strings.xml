@@ -1,20 +1,20 @@
 <resources>
     <string name="app_name">ImageLinearizer</string>
     <string name="advanced">Advanced</string>
-    <string name="srccam_characteristics">Fish-eye camera characteristics</string>
+    <string name="srccam_characteristics">Original camera\'s characteristics</string>
     <string name="srccam_hfovdeg_label">Horizontal angle of view</string>
     <string name="srccam_focaloffset_label">Focal offset</string>
     <string name="srccam_principalpointx_label">Optical center X (in pixels)</string>
     <string name="srccam_principalpointy_label">Optical center Y (in pixels)</string>
-    <string name="dstcam_characteristics">Desired camera characteristics</string>
+    <string name="dstcam_characteristics">Desired camera\'s characteristics</string>
     <string name="dstcam_geometry">Geometry:&#032;</string>
     <string name="pinhole_geometry">Linear</string>
     <string name="equirectangular_geometry">Panoramic</string>
     <string name="dstcam_hfovdeg_label">Horizontal angle of view</string>
     <string name="dstcam_imgsize_label">Image size:&#032;</string>
-    <string name="dstcam_xrotdeg_label">Vertical rotation</string>
-    <string name="dstcam_yrotdeg_label">Horizontal rotation</string>
-    <string name="dstcam_zrotdeg_label">Rotation around optical axis</string>
+    <string name="dstcam_xrotdeg_label">Rotation around original camera\'s vertical axis</string>
+    <string name="dstcam_yrotdeg_label">Rotation around original camera\'s horizontal axis</string>
+    <string name="dstcam_zrotdeg_label">Rotation around desired camera\'s optical axis</string>
     <string name="advancedparametersswitch">Advanced parameters</string>
     <string name="dstimagegridoverlayswitch">Grid overlay</string>
     <string name="src_cam_title">Sample fish-eye camera image</string>
