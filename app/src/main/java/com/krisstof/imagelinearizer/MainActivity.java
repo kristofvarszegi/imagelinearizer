@@ -220,14 +220,14 @@ public class MainActivity extends AppCompatActivity {
         * resourceDisplayDensity);
     //final int imageResourceId = R.drawable.citycar_185deg_600x400;  // Pp = img center
     //final int imageResourceId = R.drawable.cityview_150deg_4256x2832;
-    final int imageResourceId = R.drawable.factoryhall_150deg_640x427;
+    //final int imageResourceId = R.drawable.factoryhall_150deg_640x427;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__bmp;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__jpeg;
     //final int imageResourceId = R.drawable.factoryhall_150deg_640x427__png;
     //final int imageResourceId = R.drawable.factoryhall_150deg_5184x3456;
     //final int imageResourceId = R.drawable.ladderboy_180_3025x2235;
     //final int imageResourceId = R.drawable.libraryhallway_195deg_3910x2607;
-    //final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
+    final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
     //final int imageResourceId = R.drawable.redcityroad_120deg_3000x2000;  // Pp not img center
     mSrcImage = BitmapFactory.decodeResource(getResources(),
         imageResourceId, bitmapFactoryOptions)

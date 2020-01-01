@@ -38,27 +38,24 @@ static float3 equirectangularImageSpaceToCameraSpace(float2 dstImagePoint) {
   return normalize(camSpaceVec);
 }
 
-static float3 rotateAroundX(float3 vec, float xRotDeg) {
+static float3 rotateAroundX(float3 vec, float xRotRad) {
   float3 rotatedVec;
-  const float xRotRad = radians(xRotDeg);
   rotatedVec.x = vec.x;
   rotatedVec.y = cos(xRotRad) * vec.y - sin(xRotRad) * vec.z;
   rotatedVec.z = sin(xRotRad) * vec.y + cos(xRotRad) * vec.z;
   return rotatedVec;
 }
 
-static float3 rotateAroundY(float3 vec, float yRotDeg) {
+static float3 rotateAroundY(float3 vec, float yRotRad) {
   float3 rotatedVec;
-  const float yRotRad = radians(yRotDeg);
   rotatedVec.x = cos(yRotRad) * vec.x - sin(yRotRad) * vec.z;
   rotatedVec.y = vec.y;
   rotatedVec.z = sin(yRotRad) * vec.x + cos(yRotRad) * vec.z;
   return rotatedVec;
 }
 
-static float3 rotateAroundZ(float3 vec, float zRotDeg) {
+static float3 rotateAroundZ(float3 vec, float zRotRad) {
   float3 rotatedVec;
-  const float zRotRad = radians(zRotDeg);
   rotatedVec.x = cos(zRotRad) * vec.x - sin(zRotRad) * vec.y;
   rotatedVec.y = sin(zRotRad) * vec.x + cos(zRotRad) * vec.y;
   rotatedVec.z = vec.z;
@@ -233,12 +230,15 @@ static float3 rotateVec(float3 inVec, float rollRad, float pitchRad, float yawRa
   //const float3 rotatedVec = inVec;
 
   float3 rotatedVec = inVec;
-  float3 zUnitVec = {0.f, 0.f, 1.f};
-  float3 yUnitVec = {0.f, 1.f, 0.f};
-  float3 xUnitVec = {1.f, 0.f, 0.f};
-  rotatedVec = rotateAroundAxis(rotatedVec, zUnitVec, rollRad);
-  rotatedVec = rotateAroundAxis(rotatedVec, xUnitVec, pitchRad);
-  rotatedVec = rotateAroundAxis(rotatedVec, yUnitVec, yawRad);
+  //float3 zUnitVec = {0.f, 0.f, 1.f};
+  //float3 yUnitVec = {0.f, 1.f, 0.f};
+  //float3 xUnitVec = {1.f, 0.f, 0.f};
+  //rotatedVec = rotateAroundAxis(rotatedVec, zUnitVec, rollRad);
+  //rotatedVec = rotateAroundAxis(rotatedVec, xUnitVec, pitchRad);
+  //rotatedVec = rotateAroundAxis(rotatedVec, yUnitVec, yawRad);
+  rotatedVec = rotateAroundZ(rotatedVec, rollRad);
+  rotatedVec = rotateAroundX(rotatedVec, pitchRad);
+  rotatedVec = rotateAroundY(rotatedVec, -yawRad);
   //float3 worldXVec;
   //float3 worldYVec;
   //float3 worldZVec;
@@ -297,6 +297,30 @@ static float2 fisheyeCameraSpaceToImageSpace(float3 camSpaceVec) {
   //return dstImagePoint;
 }
 
+static uchar4 interpolate(float2 pointPx, uchar4 topLeftColor, uchar4 topRightColor,
+    uchar4 bottomLeftColor, uchar4 bottomRightColor) {
+  float2 xVec, yVec;
+  xVec.x = (ceil(pointPx.x) + 0.5f) - (pointPx.x + 0.5f);
+  xVec.y = (pointPx.x + 0.5f) - (floor(pointPx.x) + 0.5f);
+  yVec.x = (ceil(pointPx.y) + 0.5f) - (pointPx.y + 0.5f);
+  yVec.y = (pointPx.y + 0.5f) - (floor(pointPx.y) + 0.5f);
+  uchar4 fMatTimesYVecX, fMatTimesYVecY;
+  fMatTimesYVecX.a = topLeftColor.a * yVec.x + topRightColor.a * yVec.y;
+  fMatTimesYVecX.r = topLeftColor.r * yVec.x + topRightColor.r * yVec.y;
+  fMatTimesYVecX.g = topLeftColor.g * yVec.x + topRightColor.g * yVec.y;
+  fMatTimesYVecX.b = topLeftColor.b * yVec.x + topRightColor.b * yVec.y;
+  fMatTimesYVecY.a = bottomLeftColor.a * yVec.x + bottomRightColor.a * yVec.y;
+  fMatTimesYVecY.r = bottomLeftColor.r * yVec.x + bottomRightColor.r * yVec.y;
+  fMatTimesYVecY.g = bottomLeftColor.g * yVec.x + bottomRightColor.g * yVec.y;
+  fMatTimesYVecY.b = bottomLeftColor.b * yVec.x + bottomRightColor.b * yVec.y;
+  uchar4 interpolatedColor;
+  interpolatedColor.a = xVec.x * fMatTimesYVecX.a + xVec.y * fMatTimesYVecY.a;
+  interpolatedColor.r = xVec.x * fMatTimesYVecX.r + xVec.y * fMatTimesYVecY.r;
+  interpolatedColor.g = xVec.x * fMatTimesYVecX.g + xVec.y * fMatTimesYVecY.g;
+  interpolatedColor.b = xVec.x * fMatTimesYVecX.b + xVec.y * fMatTimesYVecY.b;
+  return interpolatedColor;
+}
+
 uchar4 __attribute__((kernel)) linearize(uint32_t x, uint32_t y) {
   float2 dstImagePoint;
   dstImagePoint.x = (float) x + 0.5f;
@@ -310,17 +334,43 @@ uchar4 __attribute__((kernel)) linearize(uint32_t x, uint32_t y) {
       camSpaceVec = equirectangularImageSpaceToCameraSpace(dstImagePoint);
       break;
   }
-  const float2 srcImagePoint = fisheyeCameraSpaceToImageSpace(
+  const float2 srcImagePointPx = fisheyeCameraSpaceToImageSpace(
       rotateCamSpaceVec(camSpaceVec, dstCamRollDeg, dstCamPitchDeg, dstCamYawDeg));
-  int2 srcImagePointPx;
-  srcImagePointPx.x = round(srcImagePoint.x);
-  srcImagePointPx.y = round(srcImagePoint.y);
   //srcImagePointPx.x = -1;
   //srcImagePointPx.y = -1;
   uchar4 outputColor;
-  if (srcImagePointPx.x >= 0 && srcImagePointPx.x < srcImageWidthPx
-      && srcImagePointPx.y >= 0 && srcImagePointPx.y < srcImageHeightPx) {
-    outputColor = rsGetElementAt_uchar4(srcImage, srcImagePointPx.x, srcImagePointPx.y);
+  if (srcImagePointPx.x >= 0.f && srcImagePointPx.x < srcImageWidthPx
+      && srcImagePointPx.y >= 0.f && srcImagePointPx.y < srcImageHeightPx) {
+    uchar4 topLeftColor = rsGetElementAt_uchar4(srcImage, floor(srcImagePointPx.x), floor(srcImagePointPx.y));
+
+    uchar4 topRightColor = topLeftColor;
+    if (ceil(srcImagePointPx.x) < srcImageWidthPx) {
+      topRightColor = rsGetElementAt_uchar4(srcImage, ceil(srcImagePointPx.x), floor(srcImagePointPx.y));
+    }
+
+    uchar4 bottomLeftColor = topLeftColor;
+    if (ceil(srcImagePointPx.y) < srcImageHeightPx) {
+      bottomLeftColor = rsGetElementAt_uchar4(srcImage, floor(srcImagePointPx.x), ceil(srcImagePointPx.y));
+    }
+
+    uchar4 bottomRightColor;
+    if (ceil(srcImagePointPx.x) < srcImageWidthPx) {
+      if (ceil(srcImagePointPx.y) < srcImageHeightPx) {
+        bottomRightColor = rsGetElementAt_uchar4(srcImage, ceil(srcImagePointPx.x), ceil(srcImagePointPx.y));
+      } else {
+        bottomRightColor = topRightColor;
+      }
+    } else {
+      if (ceil(srcImagePointPx.y) < srcImageHeightPx) {
+        bottomRightColor = bottomLeftColor;
+      } else {
+        bottomRightColor = topLeftColor;
+      }
+    }
+
+    outputColor = interpolate(srcImagePointPx, topLeftColor, topRightColor, bottomLeftColor,
+        bottomRightColor);
+    //outputColor = topLeftColor;
   } else {
     outputColor.a = 255;
     outputColor.r = 0;
