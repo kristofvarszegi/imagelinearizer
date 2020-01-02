@@ -40,6 +40,8 @@ final class ImageTransformer {
     mLinearizeScript.set_srcCamPrincipalPointYPx(srcCamParameters.principalPointYPx);
     mLinearizeScript.set_dstCamGeometryId(dstCamParameters.getGeometryId());
     mLinearizeScript.set_dstCamHfovDeg(dstCamParameters.hfovDeg);
+    //mLinearizeScript.set_dstImageWidthPx(srcImage.getWidth());
+    //mLinearizeScript.set_dstImageHeightPx(srcImage.getHeight());
     mLinearizeScript.set_dstImageWidthPx(dstCamParameters.imageWidthPx);
     mLinearizeScript.set_dstImageHeightPx(dstCamParameters.imageHeightPx);
     mLinearizeScript.set_dstCamRollDeg(dstCamParameters.rollDeg);
@@ -54,6 +56,9 @@ final class ImageTransformer {
     Bitmap dstImage = Bitmap.createBitmap(dstCamParameters.imageWidthPx,
         dstCamParameters.imageHeightPx, Bitmap.Config.ARGB_8888);
     dstImageAllocation.copyTo(dstImage);
+    /*if (dstCamParameters.imageWidthPx != srcImage.getWidth()
+        || dstCamParameters.imageHeightPx != srcImage.getHeight()) {
+    }*/
     //Log.d(TAG, "dstImage density: " + dstImage.getDensity());
     return dstImage;
   }

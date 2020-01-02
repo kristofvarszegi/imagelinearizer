@@ -367,10 +367,10 @@ uchar4 __attribute__((kernel)) linearize(uint32_t x, uint32_t y) {
         bottomRightColor = topLeftColor;
       }
     }
+    //outputColor = interpolate(srcImagePointPx, topLeftColor, topRightColor, bottomLeftColor,
+    //    bottomRightColor);
 
-    outputColor = interpolate(srcImagePointPx, topLeftColor, topRightColor, bottomLeftColor,
-        bottomRightColor);
-    //outputColor = topLeftColor;
+    outputColor = topLeftColor;
   } else {
     outputColor.a = 255;
     outputColor.r = 0;

@@ -7,14 +7,13 @@
  * - RELEASE
  *
  * Known issues
- * - Grid overlay doesn't follow dst image while a text field is changed, only after the text field losing focus
+ * - Downsizing artifacts in output image for small output image sizes
  */
 
 package com.krisstof.imagelinearizer;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -69,7 +68,8 @@ public class MainActivity extends AppCompatActivity {
   private static final String[] SUPPORTED_IMAGE_EXTENSIONS = {Utils.BMP_STR, Utils.JPEG_STR,
       Utils.JPG_STR, Utils.PNG_STR};
   private static final int WRITEEXTERNALSTORAGE_REQUESTCODE = 200;
-  private static final float SMALLIMAGE_SIZE_RATIO = 0.2f;
+  private static final float SMALLIMAGE_SIZERATIO_LANDSCAPE = 0.3f;
+  private static final float SMALLIMAGE_SIZERATIO_PORTRAIT = 0.2f;
   //private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE = 0.3f;
   //private static final float CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE = 0.8f;
   private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_PORTRAIT = 1.f;
@@ -412,8 +412,8 @@ public class MainActivity extends AppCompatActivity {
               mDstCamParameters.imageWidthPx, true);
           if (readValue != null) {
             mDstCamParameters.imageWidthPx = readValue;
-            ConstraintLayout constraintLayoutAll = findViewById(R.id.constraintLayoutAll);
-            if (constraintLayoutAll != null) {
+            FrameLayout layoutAll = findViewById(R.id.layoutAll);
+            if (layoutAll != null) {
               //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
               mImageUpdaterHandler.post(createRecalculateImagesRunnable());
             }
@@ -698,6 +698,10 @@ public class MainActivity extends AppCompatActivity {
     layout.setLayoutParams(layoutsLayoutParams);
 
     ScrollView scrollViewCameraParameters = findViewById(R.id.scrollViewCameraParameters);
+    scrollViewCameraParameters.getLayoutParams().width =
+        (int) (CAMERAPARAMETERSPANEL_WIDTH_RATIO_PORTRAIT * (float) displayMetrics.widthPixels);
+    scrollViewCameraParameters.getLayoutParams().height =
+        (int) (CAMERAPARAMETERSPANEL_HEIGHT_RATIO_PORTRAIT * (float) displayMetrics.heightPixels);
     /* No
     scrollViewCameraParameters.setMinimumWidth((int) (CAMERAPARAMETERSPANEL_WIDTH_RATIO_PORTRAIT
         * (float) displayMetrics.widthPixels));
@@ -706,10 +710,6 @@ public class MainActivity extends AppCompatActivity {
     /* No
     ScrollView.LayoutParams scrollViewsLayoutparams
         = scrollViewCameraParameters.getLayoutParams();*/
-    scrollViewCameraParameters.getLayoutParams().width =
-        (int) (CAMERAPARAMETERSPANEL_WIDTH_RATIO_PORTRAIT * (float) displayMetrics.widthPixels);
-    scrollViewCameraParameters.getLayoutParams().height =
-        (int) (CAMERAPARAMETERSPANEL_HEIGHT_RATIO_PORTRAIT * (float) displayMetrics.heightPixels);
   }
 
   private void updateCameraParametersPanelVisibilities() {
@@ -882,13 +882,13 @@ public class MainActivity extends AppCompatActivity {
     DisplayMetrics displayMetrics = new DisplayMetrics();
     getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
     if (displayMetrics.widthPixels <= displayMetrics.heightPixels) {
-      final int srcImageSmallHeight = (int) (SMALLIMAGE_SIZE_RATIO
+      final int srcImageSmallHeight = (int) (SMALLIMAGE_SIZERATIO_PORTRAIT
           * (float) displayMetrics.heightPixels);
       mSrcCamView.setImageBitmap(Bitmap.createScaledBitmap(mSrcImage,
           mSrcImage.getWidth() * srcImageSmallHeight / mSrcImage.getHeight(),
           srcImageSmallHeight, false));
     } else {
-      final int srcImageSmallWidth = (int) (SMALLIMAGE_SIZE_RATIO
+      final int srcImageSmallWidth = (int) (SMALLIMAGE_SIZERATIO_LANDSCAPE
           * (float) displayMetrics.widthPixels);
       mSrcCamView.setImageBitmap(Bitmap.createScaledBitmap(mSrcImage, srcImageSmallWidth,
           mSrcImage.getHeight() * srcImageSmallWidth / mSrcImage.getWidth(), false));
@@ -896,7 +896,7 @@ public class MainActivity extends AppCompatActivity {
 
     mDstCamView.setImageBitmap(mDstImage);
 
-    FrameLayout textLayoutAllPortrait = findViewById(R.id.textLayoutAllPortrait);
+    FrameLayout textLayoutAllPortrait = findViewById(R.id.layoutAll);
     if (textLayoutAllPortrait != null) {
       //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
       final float dstImageWPerH = (float) mDstImage.getWidth() / (float) mDstImage.getHeight();
@@ -932,16 +932,18 @@ public class MainActivity extends AppCompatActivity {
         switch (deviceOrientation) {
           case ORIENTATION_LANDSCAPE:
             mDstCamOverlayView.setImageBitmap(
-                Utils.createGridOverlayImage(mDstCamView.getHeight()
-                        * mDstImage.getWidth() / mDstImage.getHeight(), mDstCamView.getHeight(),
+                Utils.createGridOverlayImage((int) ((float) mDstCamView.getHeight()
+                        * (float) mDstImage.getWidth() / (float) mDstImage.getHeight()), mDstCamView.getHeight(),
                     gridCellSizePx, GRIDOVERLAY_THICKLINEWIDTH_PX,
                     getResources().getColor(R.color.colorAccent),
                     getResources().getColor(R.color.colorPrimary)));
             break;
           case ORIENTATION_PORTRAIT:
+            //Log.d(TAG, "mDstCamView w, h: " + mDstCamView.getWidth() + ", " + mDstCamView.getHeight());
+            //Log.d(TAG, "mDstImage w, h: " + mDstImage.getWidth() + ", " + mDstImage.getHeight());
             mDstCamOverlayView.setImageBitmap(
-                Utils.createGridOverlayImage(mDstCamView.getWidth(), mDstCamView.getWidth()
-                        * mDstImage.getHeight() / mDstImage.getWidth(),
+                Utils.createGridOverlayImage(mDstCamView.getWidth(), (int) ((float) mDstCamView.getWidth()
+                        * (float) mDstImage.getHeight() / (float) mDstImage.getWidth()),
                     gridCellSizePx, GRIDOVERLAY_THICKLINEWIDTH_PX,
                     getResources().getColor(R.color.colorAccent),
                     getResources().getColor(R.color.colorPrimary)));
