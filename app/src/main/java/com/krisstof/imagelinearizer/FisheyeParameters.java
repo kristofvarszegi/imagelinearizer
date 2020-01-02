@@ -104,5 +104,14 @@ final class FisheyeParameters {
         throw new IllegalArgumentException("Unknown image resource ID: " + imageResourceId);
     }
   }
+
+  @Override
+  public String toString() {
+    StringBuilder buf = new StringBuilder();
+    buf.append("  HFoV [deg]: " + hfovDeg);
+    buf.append("  Focal offset: " + focalOffset);
+    buf.append("  Principal point [px]: " + principalPointXPx + ", " + principalPointYPx);
+    return buf.toString();
+  }
 }
 

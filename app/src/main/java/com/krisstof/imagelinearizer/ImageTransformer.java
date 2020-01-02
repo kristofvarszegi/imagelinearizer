@@ -21,19 +21,14 @@ final class ImageTransformer {
 
   Bitmap linearize(final Bitmap srcImage, final FisheyeParameters srcCamParameters,
                    final DstCamParameters dstCamParameters) {
-    Log.d(TAG, "Linearization parameters:");
-    Log.d(TAG, "  src imageWidthPx, HeightPx: " + srcImage.getWidth() + ", "
-        + srcImage.getHeight());
-    Log.d(TAG, "  src hfovDeg, FocalOffset: " + srcCamParameters.hfovDeg + ", "
-        + srcCamParameters.focalOffset);
-    Log.d(TAG, "  src principalPointXPx, YPx: " + srcCamParameters.principalPointXPx + ", "
-        + srcCamParameters.principalPointYPx);
+    /*Log.d(TAG, "Linearization parameters:");
+    Log.d(TAG, srcCamParameters.toString());
     Log.d(TAG, "  dst geometryId: " + dstCamParameters.getGeometryId());
     Log.d(TAG, "  dst hfovDeg: " + dstCamParameters.hfovDeg);
     Log.d(TAG, "  dst imageWidthPx, HeightPx: " + dstCamParameters.imageWidthPx + ", "
         + dstCamParameters.imageHeightPx);
     Log.d(TAG, "  dst rollDeg, pitchDeg, yawDeg: " + dstCamParameters.rollDeg + ", "
-        + dstCamParameters.pitchDeg + ", " + dstCamParameters.yawDeg);
+        + dstCamParameters.pitchDeg + ", " + dstCamParameters.yawDeg);*/
     Allocation srcImageAllocation = Allocation.createFromBitmap(mRenderScript, srcImage);
     //Log.d(TAG, "srcImageAllocation pixel count: " + srcImageAllocation.getBytesSize() / 4);
     mLinearizeScript.set_srcImage(srcImageAllocation);
