@@ -45,6 +45,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -69,8 +70,8 @@ public class MainActivity extends AppCompatActivity {
       Utils.JPG_STR, Utils.PNG_STR};
   private static final int WRITEEXTERNALSTORAGE_REQUESTCODE = 200;
   private static final float SMALLIMAGE_SIZE_RATIO = 0.2f;
-  private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE = 0.3f;
-  private static final float CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE = 0.8f;
+  //private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE = 0.3f;
+  //private static final float CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE = 0.8f;
   private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_PORTRAIT = 1.f;
   private static final float CAMERAPARAMETERSPANEL_HEIGHT_RATIO_PORTRAIT = 0.3f;
   private static final int MAX_SRCIMAGETITLE_LENGTH = 32;
@@ -649,15 +650,15 @@ public class MainActivity extends AppCompatActivity {
     DisplayMetrics displayMetrics = new DisplayMetrics();
     getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 
-    LinearLayout layout = findViewById(R.id.linearLayoutCameraParameters);
-    ViewGroup.LayoutParams layoutsLayoutparams = layout.getLayoutParams();
-    layoutsLayoutparams.width = (int) (CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE
-        * (float) displayMetrics.widthPixels);
-    layoutsLayoutparams.height = (int) (CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE
-        * (float) displayMetrics.heightPixels);
-    layout.setLayoutParams(layoutsLayoutparams);
+    //LinearLayout layout = findViewById(R.id.linearLayoutCameraParameters);
+    //ViewGroup.LayoutParams layoutsLayoutparams = layout.getLayoutParams();
+    //layoutsLayoutparams.width = (int) (CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE
+    //    * (float) displayMetrics.widthPixels);
+    //layoutsLayoutparams.height = (int) (CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE
+    //    * (float) displayMetrics.heightPixels);
+    //layout.setLayoutParams(layoutsLayoutparams);
 
-    ScrollView scrollViewCameraParameters = findViewById(R.id.scrollViewCameraParameters);
+    //ScrollView scrollViewCameraParameters = findViewById(R.id.scrollViewCameraParameters);
     /* No
     scrollViewCameraParameters.setMinimumWidth((int) (CAMERAPARAMETERSPANEL_WIDTH_RATIO_PORTRAIT
         * (float) displayMetrics.widthPixels));
@@ -666,10 +667,10 @@ public class MainActivity extends AppCompatActivity {
     /* No
     ScrollView.LayoutParams scrollViewsLayoutparams
         = scrollViewCameraParameters.getLayoutParams();*/
-    scrollViewCameraParameters.getLayoutParams().width =
-        (int) (CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE * (float) displayMetrics.widthPixels);
-    scrollViewCameraParameters.getLayoutParams().height =
-        (int) (CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE * (float) displayMetrics.heightPixels);
+    //scrollViewCameraParameters.getLayoutParams().width =
+    //    (int) (CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE * (float) displayMetrics.widthPixels);
+    //scrollViewCameraParameters.getLayoutParams().height =
+    //    (int) (CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE * (float) displayMetrics.heightPixels);
   }
 
   private void adjustViewsToPortraitOrientation() {
@@ -895,12 +896,12 @@ public class MainActivity extends AppCompatActivity {
 
     mDstCamView.setImageBitmap(mDstImage);
 
-    ConstraintLayout constraintLayoutAll = findViewById(R.id.constraintLayoutAll);
-    if (constraintLayoutAll != null) {
+    FrameLayout textLayoutAllPortrait = findViewById(R.id.textLayoutAllPortrait);
+    if (textLayoutAllPortrait != null) {
       //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
       final float dstImageWPerH = (float) mDstImage.getWidth() / (float) mDstImage.getHeight();
-      final float allWPerH = (float) constraintLayoutAll.getWidth()
-          / (float) constraintLayoutAll.getHeight();
+      final float allWPerH = (float) textLayoutAllPortrait.getWidth()
+          / (float) textLayoutAllPortrait.getHeight();
       ImageView imageViewDstCam = findViewById(R.id.imageViewDstCam);
       ViewGroup.LayoutParams layoutParams = imageViewDstCam.getLayoutParams();
       if (dstImageWPerH > allWPerH) {
