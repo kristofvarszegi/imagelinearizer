@@ -1,77 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/layoutAll"
+    android:id="@+id/linearLayoutAllAppContent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
-    tools:context=".MainActivity">
-
-    <ImageView
-        android:id="@+id/imageViewDstCam"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:background="@drawable/view_background"
-        android:contentDescription="@string/imageview_dstcam"
-        android:scaleType="fitCenter"
-        android:layout_gravity="center" />
-
-    <ImageView
-        android:id="@+id/imageViewDstCamOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:contentDescription="@string/imageview_dstcam_overlay"
-        android:layout_gravity="center" />
-
-    <LinearLayout
-        android:id="@+id/linearLayoutSrcCamView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/view_background"
-        android:orientation="vertical"
-        android:layout_gravity="start" >
-
-        <TextView
-            android:id="@+id/textViewSrcCamTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/colorPrimaryDark"
-            android:gravity="center"
-            android:text="@string/src_cam_title"
-            android:textColor="@android:color/white"
-            android:textSize="8sp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/colorPrimaryDark" />
-
-        <ImageView
-            android:id="@+id/imageViewSrcCam"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:adjustViewBounds="true"
-            android:background="@drawable/view_background"
-            android:contentDescription="@string/imageview_srccam"
-            android:scaleType="fitCenter" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/textViewStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/view_background"
-        android:text="@string/status"
-        android:textColor="@android:color/white"
-        android:textSize="40sp"
-        android:gravity="center"
-        android:layout_gravity="center" />
+    android:background="@android:color/darker_gray"
+    android:focusableInTouchMode="true"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
 
     <include
-        layout="@layout/camera_parameters_panel"
-        android:layout_width="wrap_content"
+        layout="@layout/adview"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom" />
-</FrameLayout>
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp"
+        android:layout_gravity="center_horizontal" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorPrimaryDark" />
+
+    <FrameLayout
+        android:id="@+id/layoutMainContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/black"
+        tools:context=".MainActivity">
+
+        <ImageView
+            android:id="@+id/imageViewDstCam"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:adjustViewBounds="true"
+            android:background="@drawable/view_background"
+            android:contentDescription="@string/imageview_dstcam"
+            android:scaleType="fitCenter" />
+
+        <ImageView
+            android:id="@+id/imageViewDstCamOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/imageview_dstcam_overlay" />
+
+        <LinearLayout
+            android:id="@+id/linearLayoutSrcCamView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:background="@drawable/view_background"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textViewSrcCamTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryDark"
+                android:gravity="center"
+                android:text="@string/src_cam_title"
+                android:textColor="@android:color/white"
+                android:textSize="8sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/colorPrimaryDark" />
+
+            <ImageView
+                android:id="@+id/imageViewSrcCam"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:background="@drawable/view_background"
+                android:contentDescription="@string/imageview_srccam"
+                android:scaleType="fitCenter" />
+        </LinearLayout>
+
+        <include
+            layout="@layout/status_panel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center" />
+
+        <include
+            layout="@layout/cameraparameters_panel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom" />
+    </FrameLayout>
+</LinearLayout>

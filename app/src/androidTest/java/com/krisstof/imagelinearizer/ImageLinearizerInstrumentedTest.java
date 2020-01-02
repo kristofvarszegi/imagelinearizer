@@ -14,6 +14,7 @@
  * - Check saved image against GT output image
  * - Check enforcement of max output image size field limits
  * - Check UI elements' visibility according to release config
+ * - App update process
  *
  */
 package com.krisstof.imagelinearizer;

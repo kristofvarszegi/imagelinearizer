@@ -209,7 +209,7 @@
                 android:inputType="numberDecimal"
                 android:textColor="@color/colorAccent"
                 android:textSize="12sp"
-                tools:ignore="Autofill" />
+                tools:ignore="LabelFor|Autofill" />
 
             <TextView
                 android:id="@+id/textViewDstImageSizePxSeparator"
@@ -227,7 +227,7 @@
                 android:inputType="numberDecimal"
                 android:textColor="@color/colorAccent"
                 android:textSize="12sp"
-                tools:ignore="Autofill" />
+                tools:ignore="LabelFor|Autofill"  />
 
             <TextView
                 android:id="@+id/textViewDstImageSizePxUnit"

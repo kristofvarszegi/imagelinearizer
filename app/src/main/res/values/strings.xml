@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">ImageLinearizer</string>
     <string name="status">Status</string>
+    <string name="appupdate_readytoinstall">App update downloaded, ready to be installed</string>
+    <string name="install">Install</string>
+    <string name="notnow">Not now</string>
+    <string name="appupdate_download_failed">Failed to download app update</string>
     <string name="saving_image">Saving image&#8230;</string>
     <string name="loading">Loading&#8230;</string>
     <string name="loading_image">Loading image&#8230;</string>

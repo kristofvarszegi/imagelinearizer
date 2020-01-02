@@ -1,9 +1,11 @@
 /*
  * TODO
  * - Measure hfovs
- * - Check for updates and update
  * - Help
+ * - That 'Not indexable by Google Search' warning
  * - Tests
+ * - Free/Pro with productFlavors {...
+ * - Screenshots
  * - RELEASE
  *
  * Known issues
@@ -21,6 +23,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -54,6 +57,22 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.play.core.appupdate.AppUpdateInfo;
+import com.google.android.play.core.appupdate.AppUpdateManager;
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.install.InstallState;
+import com.google.android.play.core.install.InstallStateUpdatedListener;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.InstallStatus;
+import com.google.android.play.core.install.model.UpdateAvailability;
+import com.google.android.play.core.tasks.OnSuccessListener;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -64,10 +83,11 @@ import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 public class MainActivity extends AppCompatActivity {
   private static final String TAG = MainActivity.class.getSimpleName();
 
-  private static final int PICKIMAGEFROMGALLERY_REQUESTCODE = 100;
+  private static final int UPDATEAPP_REQUESTCODE = 100;
+  private static final int PICKIMAGEFROMGALLERY_REQUESTCODE = 200;
   private static final String[] SUPPORTED_IMAGE_EXTENSIONS = {Utils.BMP_STR, Utils.JPEG_STR,
       Utils.JPG_STR, Utils.PNG_STR};
-  private static final int WRITEEXTERNALSTORAGE_REQUESTCODE = 200;
+  private static final int WRITEEXTERNALSTORAGE_REQUESTCODE = 300;
   private static final float SMALLIMAGE_SIZERATIO_LANDSCAPE = 0.3f;
   private static final float SMALLIMAGE_SIZERATIO_PORTRAIT = 0.2f;
   //private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE = 0.3f;
@@ -92,11 +112,9 @@ public class MainActivity extends AppCompatActivity {
   private static final String FLOAT_FORMAT_STR = "%.2f";
 
   enum RELEASE_TYPE {FREE, PRO}
-
   private static final class ReleaseConfig {
     RELEASE_TYPE releaseType;
     int[] maxSavedImageSizePx;
-
     ReleaseConfig(RELEASE_TYPE releaseType, final int[] maxSavedImageSizePx) {
       if (maxSavedImageSizePx.length != 2) {
         throw new IllegalArgumentException("Max. image size must have 2 elements but it has "
@@ -106,7 +124,6 @@ public class MainActivity extends AppCompatActivity {
       this.maxSavedImageSizePx = new int[]{maxSavedImageSizePx[0], maxSavedImageSizePx[1]};
     }
   }
-
   private static final ReleaseConfig FREE_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.FREE,
       new int[]{320, 320});
   private static final ReleaseConfig PRO_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.PRO,
@@ -117,6 +134,9 @@ public class MainActivity extends AppCompatActivity {
   private Context mContext;
   private Thread mImageUpdaterThread;
   private Handler mImageUpdaterHandler;
+
+  private AppUpdateManager mAppUpdateManager;
+  private InstallStateUpdatedListener mInstallStateUpdatedListener;
 
   private Bitmap mSrcImage;
   private FisheyeParameters mSrcCamParameters;
@@ -132,17 +152,19 @@ public class MainActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+
+    updateApp();
+
+    // TODO If you need to obtain consent from users in the European Economic Area (EEA), set any request-specific flags (such as tagForChildDirectedTreatment or tag_for_under_age_of_consent), or otherwise take action before loading ads, ensure you do so before initializing the Mobile Ads SDK.
+    MobileAds.initialize(this, new OnInitializationCompleteListener() {
+      @Override
+      public void onInitializationComplete(InitializationStatus initializationStatus) {
+      }
+    });
+
     mContext = getApplicationContext();
     mImageTransformer = new ImageTransformer(this);
-    mImageUpdaterThread = new Thread() {
-      @Override
-      public void run() {
-        Looper.prepare();
-        mImageUpdaterHandler = new Handler() {
-        };
-        Looper.loop();
-      }
-    };
+    mImageUpdaterThread = createImageUpdaterThread();
     mImageUpdaterThread.start();
     initUi();
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -176,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
   public boolean onOptionsItemSelected(MenuItem item) {
     switch (item.getItemId()) {
       case R.id.buttonloadImageFromGallery:
-        loadImageFromGallery();
+        requestToLoadImageFromGallery();
         break;
       case R.id.buttonSaveImageToGallery:
         saveImageToGallery();
@@ -412,7 +434,7 @@ public class MainActivity extends AppCompatActivity {
               mDstCamParameters.imageWidthPx, true);
           if (readValue != null) {
             mDstCamParameters.imageWidthPx = readValue;
-            FrameLayout layoutAll = findViewById(R.id.layoutAll);
+            FrameLayout layoutAll = findViewById(R.id.layoutMainContent);
             if (layoutAll != null) {
               //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
               mImageUpdaterHandler.post(createRecalculateImagesRunnable());
@@ -541,6 +563,19 @@ public class MainActivity extends AppCompatActivity {
 
     ((TextView) findViewById(R.id.textViewStatus)).setText(
         getResources().getString(R.string.loading));
+    findViewById(R.id.buttonInstallAppUpdate).setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        installAppUpdate(v);
+      }
+    });
+    findViewById(R.id.buttonDontInstallAppUpdate).setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        dontInstallAppUpdate(v);
+      }
+    });
+    findViewById(R.id.layoutStatusPanel).setVisibility(View.INVISIBLE);
 
     updateCameraParametersPanelVisibilities();
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -551,6 +586,18 @@ public class MainActivity extends AppCompatActivity {
         adjustUiComponentsToBeAdjustedAfterViewsHaveBeenCreated();
       }
     });
+  }
+
+  private Thread createImageUpdaterThread(){
+    return new Thread() {
+      @Override
+      public void run() {
+        Looper.prepare();
+        mImageUpdaterHandler = new Handler() {
+        };
+        Looper.loop();
+      }
+    };
   }
 
   void adjustUiComponentsToBeAdjustedAfterViewsHaveBeenCreated() {
@@ -603,6 +650,33 @@ public class MainActivity extends AppCompatActivity {
       default:
         throw new RuntimeException("Invalid device orientation: " + deviceOrientation);
     }
+
+    ((AdView) findViewById(R.id.adView)).setAdListener(new AdListener() {
+      @Override
+      public void onAdLoaded() {
+        Log.d(TAG, "Ad loaded");
+      }
+
+      @Override
+      public void onAdFailedToLoad(int errorCode) {
+        Log.d(TAG, "Failed to load ad: " + errorCode);
+      }
+
+      @Override
+      public void onAdOpened() {
+        Log.d(TAG, "Ad opened");
+      }
+
+      @Override
+      public void onAdLeftApplication() {
+        Log.d(TAG, "Ad left application");
+      }
+
+      @Override
+      public void onAdClosed() {
+        Log.d(TAG, "Ad closed");
+      }
+    });
 
     TextView textViewStatus = findViewById(R.id.textViewStatus);
     textViewStatus.setText(getResources().getString(R.string.status));
@@ -738,91 +812,104 @@ public class MainActivity extends AppCompatActivity {
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent intent) {
     super.onActivityResult(requestCode, resultCode, intent);
-    if (resultCode == Activity.RESULT_OK && requestCode == PICKIMAGEFROMGALLERY_REQUESTCODE) {
+    if (requestCode == UPDATEAPP_REQUESTCODE) {
+      if (resultCode != RESULT_OK) {
+        Log.e(TAG, getResources().getString(R.string.appupdate_download_failed));
+        Toast.makeText(this, getResources().getString(R.string.appupdate_download_failed),
+            Toast.LENGTH_SHORT).show();
+      }
+    }
+    if (requestCode == PICKIMAGEFROMGALLERY_REQUESTCODE && resultCode == Activity.RESULT_OK) {
       try {
         final Uri imageUri = intent.getData();
-        //String srcImageTitle = imageUri.toString();
-        String srcImageTitle = Utils.getFilepathAtUri(this, imageUri);
-        boolean imageFileSupported;
-        if (srcImageTitle == null) {
-          Log.d(TAG, "srcImageTitle is null, setting Uri as string instead");
-          srcImageTitle = imageUri.toString();
-          imageFileSupported = true;
-        } else {
-          String srcImageExtension = "";
-          final int lastDotIndex = srcImageTitle.lastIndexOf('.');
-          if (lastDotIndex > 0) {
-            srcImageExtension = srcImageTitle.substring(lastDotIndex + 1);
-          }
-          Log.d(TAG, "SUPPORTED_IMAGE_EXTENSIONS: "
-              + Arrays.toString(SUPPORTED_IMAGE_EXTENSIONS) + "; ext: \'" + srcImageExtension
-              + "\'");
-          if (Utils.arrayContains(SUPPORTED_IMAGE_EXTENSIONS, srcImageExtension)) {
-            imageFileSupported = true;
-          } else {
-            imageFileSupported = false;
-            Toast.makeText(this, "Image file extension \'" + srcImageExtension
-                + "\" is not supported", Toast.LENGTH_LONG).show();
-          }
-        }
-        if (imageFileSupported) {
-          Log.d(TAG, "srcImageTitle: " + srcImageTitle);
-          if (srcImageTitle.length() > MAX_SRCIMAGETITLE_LENGTH) {
-            srcImageTitle = "\u2026" + srcImageTitle.substring(
-                srcImageTitle.length() - MAX_SRCIMAGETITLE_LENGTH - 1);
-            Log.d(TAG, "Shortened srcImageTitle: " + srcImageTitle);
-          }
-
-          TextView textViewStatus = findViewById(R.id.textViewStatus);
-          textViewStatus.setText(getResources().getString(R.string.loading_image));
-          textViewStatus.setVisibility(View.VISIBLE);
-
-          final Bitmap loadedImage = MediaStore.Images.Media.getBitmap(this.getContentResolver(),
-              imageUri).copy(Bitmap.Config.ARGB_8888, false);
-          Log.d(TAG, "loadedImage size in onActivityResult(.): " + loadedImage.getWidth()
-              + "x" + loadedImage.getHeight());
-          if (mSrcImage.getWidth() <= MAX_IMAGE_SIZE_PX
-              && mSrcImage.getHeight() <= MAX_IMAGE_SIZE_PX) {
-            mSrcImage = loadedImage;
-            mSrcCamParameters = new FisheyeParameters(mSrcImage);
-            //final float pixelDensity = 1.0f;
-            // From gallery the bitmap size tells the actual image resolution, don't know why
-
-            mDstCamParameters.imageWidthPx = mSrcImage.getWidth();
-            mDstCamParameters.imageHeightPx = mSrcImage.getHeight();
-            Log.d(TAG, "mDstImageSizePx in onActivityResult(.): "
-                + mDstCamParameters.imageWidthPx + "x" + mDstCamParameters.imageHeightPx);
-
-            mImageUpdaterHandler.post(createRecalculateImagesRunnable());
-
-            ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
-            SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
-            seekBarSrcCamPrincipalPointXPx.setProgress(
-                valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointXPx,
-                    mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
-            SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointYPx);
-            seekBarSrcCamPrincipalPointYPx.setProgress(
-                valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
-                    mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
-            ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(
-                String.format(Locale.US, "%d", mDstCamParameters.imageWidthPx));
-            ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(
-                String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
-          } else {
-            Toast.makeText(this, "Output image must be max. "
-                + MAX_IMAGE_SIZE_PX + " pixels wide and max. "
-                + MAX_IMAGE_SIZE_PX + " pixels high", Toast.LENGTH_LONG).show();
-          }
-          textViewStatus.setText(getResources().getString(R.string.status));
-          textViewStatus.setVisibility(View.INVISIBLE);
-        }
+        loadImagePickedFromGallery(imageUri);
       } catch (Exception e) {
         Log.e(TAG, Utils.stackTraceToString(e));
       }
     }
   }
 
-  private void loadImageFromGallery() {
+  private void loadImagePickedFromGallery(final Uri imageUri) {
+    //String srcImageTitle = imageUri.toString();
+    String srcImageTitle = Utils.getFilepathAtUri(this, imageUri);
+    boolean imageFileSupported;
+    if (srcImageTitle == null) {
+      Log.d(TAG, "srcImageTitle is null, setting Uri as string instead");
+      srcImageTitle = imageUri.toString();
+      imageFileSupported = true;
+    } else {
+      String srcImageExtension = "";
+      final int lastDotIndex = srcImageTitle.lastIndexOf('.');
+      if (lastDotIndex > 0) {
+        srcImageExtension = srcImageTitle.substring(lastDotIndex + 1);
+      }
+      Log.d(TAG, "SUPPORTED_IMAGE_EXTENSIONS: "
+          + Arrays.toString(SUPPORTED_IMAGE_EXTENSIONS) + "; ext: \'" + srcImageExtension
+          + "\'");
+      if (Utils.arrayContains(SUPPORTED_IMAGE_EXTENSIONS, srcImageExtension)) {
+        imageFileSupported = true;
+      } else {
+        imageFileSupported = false;
+        Toast.makeText(this, "Image file extension \'" + srcImageExtension
+            + "\" is not supported", Toast.LENGTH_LONG).show();
+      }
+    }
+    if (imageFileSupported) {
+      Log.d(TAG, "srcImageTitle: " + srcImageTitle);
+      if (srcImageTitle.length() > MAX_SRCIMAGETITLE_LENGTH) {
+        srcImageTitle = "\u2026" + srcImageTitle.substring(
+            srcImageTitle.length() - MAX_SRCIMAGETITLE_LENGTH - 1);
+        Log.d(TAG, "Shortened srcImageTitle: " + srcImageTitle);
+      }
+
+      TextView textViewStatus = findViewById(R.id.textViewStatus);
+      textViewStatus.setText(getResources().getString(R.string.loading_image));
+      textViewStatus.setVisibility(View.VISIBLE);
+
+      final Bitmap loadedImage;
+      try {
+        loadedImage = MediaStore.Images.Media.getBitmap(this.getContentResolver(),
+            imageUri).copy(Bitmap.Config.ARGB_8888, false);
+      Log.d(TAG, "loadedImage size in onActivityResult(.): " + loadedImage.getWidth()
+          + "x" + loadedImage.getHeight());
+      if (mSrcImage.getWidth() <= MAX_IMAGE_SIZE_PX && mSrcImage.getHeight() <= MAX_IMAGE_SIZE_PX) {
+        mSrcImage = loadedImage;
+        mSrcCamParameters = new FisheyeParameters(mSrcImage);
+        //final float pixelDensity = 1.0f;
+        // From gallery the bitmap size tells the actual image resolution, don't know why
+        mDstCamParameters.imageWidthPx = mSrcImage.getWidth();
+        mDstCamParameters.imageHeightPx = mSrcImage.getHeight();
+        Log.d(TAG, "mDstImageSizePx in onActivityResult(.): "
+            + mDstCamParameters.imageWidthPx + "x" + mDstCamParameters.imageHeightPx);
+        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+
+        ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
+        SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
+        seekBarSrcCamPrincipalPointXPx.setProgress(
+            valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointXPx,
+                mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
+        SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointYPx);
+        seekBarSrcCamPrincipalPointYPx.setProgress(
+            valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
+                mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
+        ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(
+            String.format(Locale.US, "%d", mDstCamParameters.imageWidthPx));
+        ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(
+            String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
+      } else {
+        Toast.makeText(this, "Output image must be max. "
+            + MAX_IMAGE_SIZE_PX + " pixels wide and max. "
+            + MAX_IMAGE_SIZE_PX + " pixels high", Toast.LENGTH_LONG).show();
+      }
+      textViewStatus.setText(getResources().getString(R.string.status));
+      textViewStatus.setVisibility(View.INVISIBLE);
+      } catch (Exception e) {
+        Log.e(TAG, Utils.stackTraceToString(e));
+      }
+    }
+  }
+
+  private void requestToLoadImageFromGallery() {
     Intent intent = new Intent(Intent.ACTION_PICK);
     intent.setType("image/*");
     ArrayList<String> mimeTypes = new ArrayList<>();
@@ -896,7 +983,7 @@ public class MainActivity extends AppCompatActivity {
 
     mDstCamView.setImageBitmap(mDstImage);
 
-    FrameLayout textLayoutAllPortrait = findViewById(R.id.layoutAll);
+    FrameLayout textLayoutAllPortrait = findViewById(R.id.layoutMainContent);
     if (textLayoutAllPortrait != null) {
       //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
       final float dstImageWPerH = (float) mDstImage.getWidth() / (float) mDstImage.getHeight();
@@ -959,6 +1046,8 @@ public class MainActivity extends AppCompatActivity {
     } else {
       findViewById(R.id.imageViewDstCamOverlay).setVisibility(View.INVISIBLE);
     }
+
+    ((AdView) findViewById(R.id.adView)).loadAd(new AdRequest.Builder().build());
   }
 
   private Runnable createRecalculateImagesRunnable() {
@@ -998,5 +1087,76 @@ public class MainActivity extends AppCompatActivity {
     } else {
       throw new IllegalArgumentException("Invalid camera geometry string: " + geometryStr);
     }
+  }
+
+  // https://stackoverflow.com/questions/55939853/how-to-work-with-androids-in-app-update-api/56154757
+  void updateApp() {
+    mAppUpdateManager = AppUpdateManagerFactory.create(this);
+    mInstallStateUpdatedListener = new InstallStateUpdatedListener() {
+      @Override
+      public void onStateUpdate(InstallState state) {
+        if (state.installStatus() == InstallStatus.DOWNLOADED) {
+          askUserToCompleteUpdate();
+        } else if (state.installStatus() == InstallStatus.INSTALLED) {
+          if (mAppUpdateManager != null) {
+            mAppUpdateManager.unregisterListener(mInstallStateUpdatedListener);
+          }
+        } else {
+          Log.i(TAG, "InstallStateUpdatedListener state: " + state.installStatus());
+        }
+      }
+    };
+    mAppUpdateManager.registerListener(mInstallStateUpdatedListener);
+
+    mAppUpdateManager.getAppUpdateInfo().addOnSuccessListener(
+        new OnSuccessListener<AppUpdateInfo>() {
+      @Override
+      public void onSuccess(AppUpdateInfo appUpdateInfo) {
+        if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+            && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+          try {
+            mAppUpdateManager.startUpdateFlowForResult(appUpdateInfo, AppUpdateType.FLEXIBLE,
+                MainActivity.this, UPDATEAPP_REQUESTCODE);
+          } catch (IntentSender.SendIntentException sie) {
+            Log.e(TAG, Utils.stackTraceToString(sie));
+          }
+        } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+          askUserToCompleteUpdate();
+        } else {
+          Log.w(TAG, "Unhandled branch in appUpdateInfoTask");
+        }
+      }
+    });
+
+  }
+
+  private void askUserToCompleteUpdate() {
+    TextView textViewStatus = findViewById(R.id.textViewStatus);
+    textViewStatus.setText(getResources().getString(R.string.appupdate_readytoinstall));
+    textViewStatus.setVisibility(View.VISIBLE);
+    findViewById(R.id.buttonInstallAppUpdate).setVisibility(View.VISIBLE);
+    findViewById(R.id.buttonDontInstallAppUpdate).setVisibility(View.VISIBLE);
+    findViewById(R.id.layoutStatusPanel).setVisibility(View.VISIBLE);
+  }
+
+  private void installAppUpdate(View view) {
+    if (mAppUpdateManager != null) {
+      mAppUpdateManager.completeUpdate();
+    }
+    findViewById(R.id.buttonInstallAppUpdate).setVisibility(View.GONE);
+    findViewById(R.id.buttonDontInstallAppUpdate).setVisibility(View.GONE);
+    findViewById(R.id.layoutStatusPanel).setVisibility(View.GONE);
+    TextView textViewStatus = findViewById(R.id.textViewStatus);
+    textViewStatus.setVisibility(View.GONE);
+    textViewStatus.setText(getResources().getString(R.string.status));
+  }
+
+  private void dontInstallAppUpdate(View view) {
+    findViewById(R.id.buttonInstallAppUpdate).setVisibility(View.GONE);
+    findViewById(R.id.buttonDontInstallAppUpdate).setVisibility(View.GONE);
+    findViewById(R.id.layoutStatusPanel).setVisibility(View.GONE);
+    TextView textViewStatus = findViewById(R.id.textViewStatus);
+    textViewStatus.setVisibility(View.GONE);
+    textViewStatus.setText(getResources().getString(R.string.status));
   }
 }
