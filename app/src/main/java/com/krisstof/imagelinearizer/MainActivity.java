@@ -1,12 +1,15 @@
 /*
  * TODO
  * - Measure hfovs
- * - Help
- * - That 'Not indexable by Google Search' warning
  * - Tests
+ * - Edittext texts at same height as textviews
  * - Free/Pro with productFlavors {...
- * - Screenshots
+ * - Screenshots for Play Store
  * - RELEASE
+ *
+ * Next release:
+ * - As option for opening images
+ * - Share linearized image
  *
  * Known issues
  * - Downsizing artifacts in output image for small output image sizes
@@ -36,15 +39,15 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.method.ScrollingMovementMethod;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -155,19 +158,21 @@ public class MainActivity extends AppCompatActivity {
 
     updateApp();
 
-    // TODO If you need to obtain consent from users in the European Economic Area (EEA), set any request-specific flags (such as tagForChildDirectedTreatment or tag_for_under_age_of_consent), or otherwise take action before loading ads, ensure you do so before initializing the Mobile Ads SDK.
-    MobileAds.initialize(this, new OnInitializationCompleteListener() {
-      @Override
-      public void onInitializationComplete(InitializationStatus initializationStatus) {
-      }
-    });
+    if (RELEASECONFIG.releaseType == RELEASE_TYPE.PRO) {
+      // TODO If you need to obtain consent from users in the European Economic Area (EEA), set any request-specific flags (such as tagForChildDirectedTreatment or tag_for_under_age_of_consent), or otherwise take action before loading ads, ensure you do so before initializing the Mobile Ads SDK.
+      MobileAds.initialize(this, new OnInitializationCompleteListener() {
+        @Override
+        public void onInitializationComplete(InitializationStatus initializationStatus) {
+        }
+      });
+    }
 
     mContext = getApplicationContext();
     mImageTransformer = new ImageTransformer(this);
     mImageUpdaterThread = createImageUpdaterThread();
     mImageUpdaterThread.start();
     initUi();
-    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+    findViewById(R.id.layoutHelpPanel).setVisibility(View.GONE);
   }
 
   @Override
@@ -189,28 +194,6 @@ public class MainActivity extends AppCompatActivity {
   }
 
   @Override
-  public boolean onCreateOptionsMenu(Menu menu) {
-    getMenuInflater().inflate(R.menu.barmenu, menu);
-    return super.onCreateOptionsMenu(menu);
-  }
-
-  @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    switch (item.getItemId()) {
-      case R.id.buttonloadImageFromGallery:
-        requestToLoadImageFromGallery();
-        break;
-      case R.id.buttonSaveImageToGallery:
-        saveImageToGallery();
-        break;
-      case R.id.buttonHelp:
-        showHelp();
-        break;
-    }
-    return super.onOptionsItemSelected(item);
-  }
-
-  @Override
   public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                          @NonNull int[] grantResults) {
     if (requestCode == WRITEEXTERNALSTORAGE_REQUESTCODE
@@ -224,6 +207,31 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void initUi() {
+    initContentView();
+    initMenuBar();
+
+    initSrcImage();
+    mSrcCamView = findViewById(R.id.imageViewSrcCam);
+
+    if (mDstCamParameters == null) {
+      mDstCamParameters = new DstCamParameters();
+      mDstCamParameters.imageWidthPx = (int) ((float) mSrcImage.getWidth());
+      mDstCamParameters.imageHeightPx = (int) ((float) mSrcImage.getHeight());
+      //mDstCamParameters.geometry = DstCamParameters.CAMERA_GEOMETRY.EQUIRECTANGULAR;
+      Log.d(TAG, "mDstImageSizePx in onCreate(.): " + mDstCamParameters.imageWidthPx + "x"
+          + mDstCamParameters.imageHeightPx);
+    }
+
+    initCameraParametersUi();
+    initStatusPanel();
+    updateCameraParametersPanelVisibilities();
+    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
+    initDstCamUi();
+    initHelpPanel();
+  }
+
+  private void initContentView() {
     DisplayMetrics displayMetrics = new DisplayMetrics();
     getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
     final int deviceOrientation = Utils.getDeviceOrientation(displayMetrics);
@@ -239,13 +247,36 @@ public class MainActivity extends AppCompatActivity {
       default:
         throw new RuntimeException("Invalid device orientation: " + deviceOrientation);
     }
+  }
+
+  private void initMenuBar() {
+    findViewById(R.id.buttonLoadImage).setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        requestToLoadImageFromGallery();
+      }
+    });
+    findViewById(R.id.buttonSaveImage).setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        saveImageToGallery();
+      }
+    });
+    findViewById(R.id.buttonHelp).setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        showHelp();
+      }
+    });
+  }
+
+  private void initSrcImage() {
+    DisplayMetrics displayMetrics = new DisplayMetrics();
+    getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+    BitmapFactory.Options bitmapFactoryOptions = new BitmapFactory.Options();
     final float resourceDisplayDensity = getResources().getDisplayMetrics().density;
     Log.i(TAG, "Screen w, h, display density: " + displayMetrics.widthPixels + ", "
         + displayMetrics.heightPixels + ", " + resourceDisplayDensity);
-
-    mSrcCamView = findViewById(R.id.imageViewSrcCam);
-    //mSrcImage = ((BitmapDrawable) mSrcCamView.getDrawable()).getBitmap();
-    BitmapFactory.Options bitmapFactoryOptions = new BitmapFactory.Options();
     bitmapFactoryOptions.inDensity = (int) ((float) BASELINE_DISPLAYDENSITY_DP
         * resourceDisplayDensity);
     //final int imageResourceId = R.drawable.citycar_185deg_600x400;  // Pp = img center
@@ -261,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
     final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
     //final int imageResourceId = R.drawable.redcityroad_120deg_3000x2000;  // Pp not img center
     TextView textViewSrcCamTitle = findViewById(R.id.textViewSrcCamTitle);
-    textViewSrcCamTitle.setText(getString(R.string.src_cam_title));
+    textViewSrcCamTitle.setText(getString(R.string.srccam_title));
     if (mSrcImage == null) {
       Log.d(TAG, "Loading sample image...");
       mSrcImage = BitmapFactory.decodeResource(getResources(),
@@ -274,21 +305,15 @@ public class MainActivity extends AppCompatActivity {
       } catch (IllegalArgumentException iae) {
         Toast.makeText(this, iae.getMessage(), Toast.LENGTH_LONG).show();
       }
-      Log.d(TAG, "mSrcImage size in onCreate(.)...: " + mSrcImage.getWidth() + " x "
+      Log.d(TAG, "Src image size in onCreate(.)...: " + mSrcImage.getWidth() + " x "
           + mSrcImage.getHeight());
+      final String srcImageSizeText = mSrcImage.getWidth()
+          + " x " + mSrcImage.getHeight() + " " + getResources().getString(R.string.px);
+      ((TextView) findViewById(R.id.textViewSrcCamImageSize)).setText(srcImageSizeText);
     }
+  }
 
-    if (mDstCamParameters == null) {
-      mDstCamParameters = new DstCamParameters();
-      mDstCamParameters.imageWidthPx = (int) ((float) mSrcImage.getWidth());
-      mDstCamParameters.imageHeightPx = (int) ((float) mSrcImage.getHeight());
-      //mDstCamParameters.geometry = DstCamParameters.CAMERA_GEOMETRY.EQUIRECTANGULAR;
-      Log.d(TAG, "mDstImageSizePx in onCreate(.): " + mDstCamParameters.imageWidthPx + "x"
-          + mDstCamParameters.imageHeightPx);
-    }
-    mDstCamView = findViewById(R.id.imageViewDstCam);
-    mDstCamOverlayView = findViewById(R.id.imageViewDstCamOverlay);
-
+  private void initCameraParametersUi() {
     SeekBar seekBarSrcCamHfovDeg = findViewById(R.id.seekBarSrcCamHfovDeg);
     seekBarSrcCamHfovDeg.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -492,7 +517,7 @@ public class MainActivity extends AppCompatActivity {
         mDstCamParameters.rollDeg = seekBarScaleToValueScale(seekBar, progress,
             DSTCAM_ROLL_SPAN_DEG) - 0.5f * DSTCAM_ROLL_SPAN_DEG;
         ((TextView) findViewById(R.id.textViewDstCamRollDeg)).setText(String.format(
-            Locale.getDefault(), getResources().getString(R.string.dstcam_zrotdeg_label)
+            Locale.getDefault(), getResources().getString(R.string.dstcam_rolldeg_label)
                 + ": " + FLOAT_FORMAT_STR + "°", mDstCamParameters.rollDeg));
         mImageUpdaterHandler.post(createRecalculateImagesRunnable());
       }
@@ -511,7 +536,7 @@ public class MainActivity extends AppCompatActivity {
         mDstCamParameters.pitchDeg = seekBarScaleToValueScale(seekBar, progress,
             DSTCAM_PITCH_SPAN_DEG) - 0.5f * DSTCAM_PITCH_SPAN_DEG;
         ((TextView) findViewById(R.id.textViewDstCamPitchDeg)).setText(String.format(
-            Locale.getDefault(), getResources().getString(R.string.dstcam_xrotdeg_label)
+            Locale.getDefault(), getResources().getString(R.string.dstcam_pitchdeg_label)
                 + ": " + FLOAT_FORMAT_STR + "°", mDstCamParameters.pitchDeg));
         mImageUpdaterHandler.post(createRecalculateImagesRunnable());
       }
@@ -530,7 +555,7 @@ public class MainActivity extends AppCompatActivity {
         mDstCamParameters.yawDeg = seekBarScaleToValueScale(seekBar, progress, DSTCAM_YAW_SPAN_DEG)
             - 0.5f * DSTCAM_YAW_SPAN_DEG;
         ((TextView) findViewById(R.id.textViewDstCamYawDeg)).setText(String.format(
-            Locale.getDefault(), getResources().getString(R.string.dstcam_yrotdeg_label)
+            Locale.getDefault(), getResources().getString(R.string.dstcam_yawdeg_label)
                 + ": " + FLOAT_FORMAT_STR + "°", mDstCamParameters.yawDeg));
         mImageUpdaterHandler.post(createRecalculateImagesRunnable());
       }
@@ -560,7 +585,9 @@ public class MainActivity extends AppCompatActivity {
             mImageUpdaterHandler.post(createRecalculateImagesRunnable());
           }
         });
+  }
 
+  private void initStatusPanel() {
     ((TextView) findViewById(R.id.textViewStatus)).setText(
         getResources().getString(R.string.loading));
     findViewById(R.id.buttonInstallAppUpdate).setOnClickListener(new View.OnClickListener() {
@@ -576,14 +603,14 @@ public class MainActivity extends AppCompatActivity {
       }
     });
     findViewById(R.id.layoutStatusPanel).setVisibility(View.INVISIBLE);
+  }
 
-    updateCameraParametersPanelVisibilities();
-    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-
-    mDstCamOverlayView.post(new Runnable() {
+  private void initHelpPanel() {
+    ((TextView) findViewById(R.id.textViewHelp)).setMovementMethod(new ScrollingMovementMethod());
+    findViewById(R.id.buttonCloseHelp).setOnClickListener(new View.OnClickListener() {
       @Override
-      public void run() {
-        adjustUiComponentsToBeAdjustedAfterViewsHaveBeenCreated();
+      public void onClick(View v) {
+        findViewById(R.id.layoutHelpPanel).setVisibility(View.GONE);
       }
     });
   }
@@ -805,8 +832,19 @@ public class MainActivity extends AppCompatActivity {
     findViewById(R.id.seekBarDstCamRollDeg).setVisibility(visibility);
   }
 
+  private void initDstCamUi() {
+    mDstCamView = findViewById(R.id.imageViewDstCam);
+    mDstCamOverlayView = findViewById(R.id.imageViewDstCamOverlay);
+    mDstCamOverlayView.post(new Runnable() {
+      @Override
+      public void run() {
+        adjustUiComponentsToBeAdjustedAfterViewsHaveBeenCreated();
+      }
+    });
+  }
+
   private void showHelp() {
-    // TODO
+    findViewById(R.id.layoutHelpPanel).setVisibility(View.VISIBLE);
   }
 
   @Override
@@ -822,14 +860,14 @@ public class MainActivity extends AppCompatActivity {
     if (requestCode == PICKIMAGEFROMGALLERY_REQUESTCODE && resultCode == Activity.RESULT_OK) {
       try {
         final Uri imageUri = intent.getData();
-        loadImagePickedFromGallery(imageUri);
+        loadImageWhichTheUserPickedFromGallery(imageUri);
       } catch (Exception e) {
         Log.e(TAG, Utils.stackTraceToString(e));
       }
     }
   }
 
-  private void loadImagePickedFromGallery(final Uri imageUri) {
+  private void loadImageWhichTheUserPickedFromGallery(final Uri imageUri) {
     //String srcImageTitle = imageUri.toString();
     String srcImageTitle = Utils.getFilepathAtUri(this, imageUri);
     boolean imageFileSupported;
@@ -884,6 +922,9 @@ public class MainActivity extends AppCompatActivity {
         mImageUpdaterHandler.post(createRecalculateImagesRunnable());
 
         ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
+        final String srcImageSizeText = mSrcImage.getWidth()
+            + " x " + mSrcImage.getHeight() + " " + getResources().getString(R.string.px);
+        ((TextView) findViewById(R.id.textViewSrcCamImageSize)).setText(srcImageSizeText);
         SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
         seekBarSrcCamPrincipalPointXPx.setProgress(
             valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointXPx,
@@ -932,9 +973,10 @@ public class MainActivity extends AppCompatActivity {
       Log.i(TAG, "App has write permission");
       //String imageFilename = "linear_" + Utils.getDateTimeStr() + "." + Utils.JPG_STR;
       String imageFilename = "linear_" + Utils.getDateTimeStr() + "." + Utils.PNG_STR;
+      LinearLayout layoutStatusPanel = findViewById(R.id.layoutStatusPanel);
       TextView textViewStatus = findViewById(R.id.textViewStatus);
       textViewStatus.setText(getResources().getString(R.string.saving_image));
-      textViewStatus.setVisibility(View.VISIBLE);
+      layoutStatusPanel.setVisibility(View.VISIBLE);
       switch (RELEASECONFIG.releaseType) {
         case FREE:
           final Bitmap reducedDstImage = Utils.reduceImageToFit(mDstImage,
@@ -955,7 +997,7 @@ public class MainActivity extends AppCompatActivity {
           }
           break;
       }
-      textViewStatus.setVisibility(View.INVISIBLE);
+      layoutStatusPanel.setVisibility(View.INVISIBLE);
       textViewStatus.setText(getResources().getString(R.string.status));
     }
   }
@@ -1047,7 +1089,9 @@ public class MainActivity extends AppCompatActivity {
       findViewById(R.id.imageViewDstCamOverlay).setVisibility(View.INVISIBLE);
     }
 
-    ((AdView) findViewById(R.id.adView)).loadAd(new AdRequest.Builder().build());
+    if (RELEASECONFIG.releaseType == RELEASE_TYPE.PRO) {
+      ((AdView) findViewById(R.id.adView)).loadAd(new AdRequest.Builder().build());
+    }
   }
 
   private Runnable createRecalculateImagesRunnable() {

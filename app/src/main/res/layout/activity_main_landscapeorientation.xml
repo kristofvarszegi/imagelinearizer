@@ -9,6 +9,47 @@
     android:gravity="bottom"
     android:orientation="vertical">
 
+    <LinearLayout
+        android:id="@+id/linearLayoutMenuBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/menubar_background"
+        android:orientation="horizontal">
+
+        <include
+            layout="@layout/menubar_maincontent"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:id="@+id/linearLayoutAd"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:background="@android:color/darker_gray"
+            android:orientation="horizontal">
+
+            <include
+                layout="@layout/adview"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="1dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginEnd="2dp"
+                android:layout_marginBottom="1dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorPrimaryDark" />
+
     <FrameLayout
         android:id="@+id/layoutMainContent"
         android:layout_width="match_parent"
@@ -46,9 +87,19 @@
                 android:id="@+id/textViewSrcCamTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/colorPrimaryDark"
+                android:background="@color/colorPrimary"
                 android:gravity="center"
-                android:text="@string/src_cam_title"
+                android:text="@string/srccam_title"
+                android:textColor="@android:color/white"
+                android:textSize="8sp" />
+
+            <TextView
+                android:id="@+id/textViewSrcCamImageSize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimary"
+                android:gravity="center"
+                android:text="@string/srccam_imagesize"
                 android:textColor="@android:color/white"
                 android:textSize="8sp" />
 
@@ -80,18 +131,11 @@
             android:layout_height="match_parent"
             android:layout_gravity="bottom" />
 
+        <include
+            layout="@layout/help_panel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_margin="12dp" />
     </FrameLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/colorPrimaryDark" />
-
-    <include
-        layout="@layout/adview"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="2dp"
-        android:layout_marginBottom="2dp" />
 </LinearLayout>

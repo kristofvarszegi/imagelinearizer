@@ -6,26 +6,28 @@
     android:layout_height="match_parent"
     android:background="@android:color/darker_gray"
     android:focusableInTouchMode="true"
-    android:gravity="center_horizontal"
+    android:gravity="start"
     android:orientation="vertical">
 
-    <include
-        layout="@layout/adview"
+    <LinearLayout
+        android:id="@+id/linearLayoutMenuBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:layout_marginBottom="2dp"
-        android:layout_gravity="center_horizontal" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/colorPrimaryDark" />
+        android:layout_height="@dimen/menubar_height"
+        android:layout_weight="1"
+        android:gravity="end"
+        android:background="@drawable/menubar_background"
+        android:orientation="horizontal" >
+        <include
+            layout="@layout/menubar_maincontent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/layoutMainContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_weight="1000"
         android:background="@android:color/black"
         tools:context=".MainActivity">
 
@@ -59,9 +61,18 @@
                 android:id="@+id/textViewSrcCamTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/colorPrimaryDark"
+                android:background="@color/colorPrimary"
                 android:gravity="center"
-                android:text="@string/src_cam_title"
+                android:text="@string/srccam_title"
+                android:textColor="@android:color/white"
+                android:textSize="8sp" />
+            <TextView
+                android:id="@+id/textViewSrcCamImageSize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimary"
+                android:gravity="center"
+                android:text="@string/srccam_imagesize"
                 android:textColor="@android:color/white"
                 android:textSize="8sp" />
 
@@ -91,5 +102,31 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom" />
+
+        <include
+            layout="@layout/help_panel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_margin="12dp" />
     </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorPrimaryDark" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <include
+        layout="@layout/adview"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_weight="1"
+        android:layout_gravity="end"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp" />
 </LinearLayout>

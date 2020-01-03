@@ -4,6 +4,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:scrollbarThumbVertical="@color/colorPrimary"
+    android:scrollbarTrackVertical="@color/colorPrimaryDark"
     android:scrollbarSize="8dp" >
 
     <LinearLayout
@@ -20,7 +21,7 @@
             android:id="@+id/textViewSrcCamParametersTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimaryDark"
+            android:background="@color/colorPrimary"
             android:gravity="center"
             android:text="@string/srccam_characteristics"
             android:textColor="@android:color/white" />
@@ -113,7 +114,7 @@
             android:id="@+id/textViewDstCamParametersTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimaryDark"
+            android:background="@color/colorPrimary"
             android:gravity="center"
             android:text="@string/dstcam_characteristics"
             android:textColor="@android:color/white" />
@@ -137,6 +138,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/dstcam_geometry"
+                android:layout_marginEnd="@dimen/gap_between_fields"
                 android:textColor="@android:color/white"
                 android:textSize="12sp" />
 
@@ -144,7 +146,7 @@
                 android:id="@+id/spinnerDstCamGeometry"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/colorPrimaryDark"
+                android:background="@color/colorPrimary"
                 android:entries="@array/dst_cam_geometry_choices"
                 android:gravity="center_horizontal"
                 android:spinnerMode="dropdown" />
@@ -196,7 +198,7 @@
             <TextView
                 android:id="@+id/textViewDstImageSizePx"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:gravity="center"
                 android:text="@string/dstcam_imgsize_label"
                 android:textColor="@android:color/white"
@@ -209,12 +211,14 @@
                 android:inputType="numberDecimal"
                 android:textColor="@color/colorAccent"
                 android:textSize="12sp"
+                android:layout_marginStart="@dimen/gap_between_fields"
                 tools:ignore="LabelFor|Autofill" />
 
             <TextView
                 android:id="@+id/textViewDstImageSizePxSeparator"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/gap_between_fields"
                 android:gravity="center"
                 android:text="@string/image_size_separator"
                 android:textColor="@android:color/white"
@@ -224,6 +228,7 @@
                 android:id="@+id/editTextDstImageHeightPx"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/gap_between_fields"
                 android:inputType="numberDecimal"
                 android:textColor="@color/colorAccent"
                 android:textSize="12sp"
@@ -232,7 +237,8 @@
             <TextView
                 android:id="@+id/textViewDstImageSizePxUnit"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/gap_between_fields"
                 android:gravity="center"
                 android:text="@string/px"
                 android:textColor="@android:color/white"
@@ -254,7 +260,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="@string/dstcam_yrotdeg_label"
+            android:text="@string/dstcam_yawdeg_label"
             android:textColor="@android:color/white"
             android:textSize="12sp" />
 
@@ -274,7 +280,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="@string/dstcam_xrotdeg_label"
+            android:text="@string/dstcam_pitchdeg_label"
             android:textColor="@android:color/white"
             android:textSize="12sp" />
 
@@ -294,7 +300,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="@string/dstcam_zrotdeg_label"
+            android:text="@string/dstcam_rolldeg_label"
             android:textColor="@android:color/white"
             android:textSize="12sp" />
 
