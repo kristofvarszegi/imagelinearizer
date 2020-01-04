@@ -3,19 +3,18 @@
     android:id="@+id/scrollViewCameraParameters"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:scrollbarSize="8dp"
     android:scrollbarThumbVertical="@color/colorPrimary"
-    android:scrollbarTrackVertical="@color/colorPrimaryDark"
-    android:scrollbarSize="8dp" >
+    android:scrollbarTrackVertical="@color/colorPrimaryDark">
 
-    <LinearLayout
-        xmlns:tools="http://schemas.android.com/tools"
+    <LinearLayout xmlns:tools="http://schemas.android.com/tools"
         android:id="@+id/linearLayoutCameraParameters"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/cameraparameterspanel_background"
         android:focusableInTouchMode="true"
         android:gravity="center_horizontal"
-        android:orientation="vertical" >
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/textViewSrcCamParsTitle"
@@ -136,9 +135,9 @@
                 android:id="@+id/textViewDstCamGeometry"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/gap_between_fields"
                 android:gravity="center"
                 android:text="@string/dstcam_geometry"
-                android:layout_marginEnd="@dimen/gap_between_fields"
                 android:textColor="@android:color/white"
                 android:textSize="12sp" />
 
@@ -146,11 +145,11 @@
                 android:id="@+id/spinnerDstCamGeometry"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:background="@android:color/transparent"
                 android:entries="@array/dst_cam_geometry_choices"
                 android:gravity="center_horizontal"
-                android:spinnerMode="dropdown"
-                android:background="@android:color/transparent"
-                android:layout_marginStart="2dp" />
+                android:spinnerMode="dropdown" />
         </LinearLayout>
 
         <View
@@ -209,10 +208,11 @@
                 android:id="@+id/editTextDstImageWidthPx"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/gap_between_fields"
+                android:background="@android:color/transparent"
                 android:inputType="numberDecimal"
                 android:textColor="@color/colorAccent"
                 android:textSize="12sp"
-                android:layout_marginStart="@dimen/gap_between_fields"
                 tools:ignore="LabelFor|Autofill" />
 
             <TextView
@@ -230,10 +230,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/gap_between_fields"
+                android:background="@android:color/transparent"
                 android:inputType="numberDecimal"
                 android:textColor="@color/colorAccent"
                 android:textSize="12sp"
-                tools:ignore="LabelFor|Autofill"  />
+                tools:ignore="LabelFor|Autofill" />
 
             <TextView
                 android:id="@+id/textViewDstImageSizePxUnit"

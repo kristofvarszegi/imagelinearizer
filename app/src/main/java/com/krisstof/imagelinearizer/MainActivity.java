@@ -2,7 +2,6 @@
  * TODO
  * - Measure hfovs
  * - Tests
- * - Edittext texts at same height as textviews
  * - Free/Pro with productFlavors {...
  * - Screenshots for Play Store
  * - RELEASE
@@ -13,6 +12,7 @@
  *
  * Known issues
  * - Downsizing artifacts in output image for small output image sizes
+ * - Edittext texts at same height as textviews
  */
 
 package com.krisstof.imagelinearizer;
@@ -62,6 +62,7 @@ import android.widget.Toast;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.InterstitialAd;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
@@ -114,9 +115,11 @@ public class MainActivity extends AppCompatActivity {
   private static final String FLOAT_FORMAT_STR = "%.2f";
 
   enum RELEASE_TYPE {FREE, PRO}
+
   private static final class ReleaseConfig {
     RELEASE_TYPE releaseType;
     int[] maxSavedImageSizePx;
+
     ReleaseConfig(RELEASE_TYPE releaseType, final int[] maxSavedImageSizePx) {
       if (maxSavedImageSizePx.length != 2) {
         throw new IllegalArgumentException("Max. image size must have 2 elements but it has "
@@ -126,20 +129,28 @@ public class MainActivity extends AppCompatActivity {
       this.maxSavedImageSizePx = new int[]{maxSavedImageSizePx[0], maxSavedImageSizePx[1]};
     }
   }
+
   private static final ReleaseConfig FREE_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.FREE,
       new int[]{320, 320});
   private static final ReleaseConfig PRO_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.PRO,
       new int[]{MAX_IMAGE_SIZE_PX, MAX_IMAGE_SIZE_PX});
-  //private static final ReleaseConfig RELEASECONFIG = FREE_RELEASECONFIG;
-  private static final ReleaseConfig RELEASECONFIG = PRO_RELEASECONFIG;
+  private static final ReleaseConfig RELEASECONFIG = FREE_RELEASECONFIG;
+  //private static final ReleaseConfig RELEASECONFIG = PRO_RELEASECONFIG;
 
   private Context mContext;
   private Thread mImageUpdaterThread;
   private Handler mImageUpdaterHandler;
+  private Thread mImageSaverThread;
+  private Handler mImageSaverHandler;
+  private String mDstImageFilename;
   private boolean mIsHelpVisible;
 
   private AppUpdateManager mAppUpdateManager;
   private InstallStateUpdatedListener mInstallStateUpdatedListener;
+
+  private InterstitialAd mInterstitialAd;
+  private boolean mIsInterstitialAdOpen;
+  private String mImageSavedNotificationText;
 
   private Bitmap mSrcImage;
   private FisheyeParameters mSrcCamParameters;
@@ -158,27 +169,12 @@ public class MainActivity extends AppCompatActivity {
 
     updateApp();
 
-    if (RELEASECONFIG.releaseType == RELEASE_TYPE.PRO) {
-      // TODO If you need to obtain consent from users in the European Economic Area (EEA), set any request-specific flags (such as tagForChildDirectedTreatment or tag_for_under_age_of_consent), or otherwise take action before loading ads, ensure you do so before initializing the Mobile Ads SDK.
-      MobileAds.initialize(this, new OnInitializationCompleteListener() {
-        @Override
-        public void onInitializationComplete(InitializationStatus initializationStatus) {
-        }
-      });
-    }
+    initAds();
 
     mContext = getApplicationContext();
     mImageTransformer = new ImageTransformer(this);
     mIsHelpVisible = false;
     initUi();
-    mDstCamOverlayView.post(new Runnable() {
-      @Override
-      public void run() {
-        adjustUiComponentsToBeAdjustedAfterViewsHaveBeenCreated();
-        mImageUpdaterThread = createImageUpdaterThread();
-        mImageUpdaterThread.start();
-      }
-    });
   }
 
   @Override
@@ -235,6 +231,23 @@ public class MainActivity extends AppCompatActivity {
 
     initDstCamUi();
     initHelpPanel();
+
+    mDstCamOverlayView.post(new Runnable() {
+      @Override
+      public void run() {
+        adjustCreatedUiComponents();
+        mImageUpdaterThread = createImageUpdaterThread();
+        mImageUpdaterThread.start();
+      }
+    });
+
+    mDstCamOverlayView.post(new Runnable() {
+      @Override
+      public void run() {
+        mImageSaverThread = createImageSaverThread();
+        mImageSaverThread.start();
+      }
+    });
   }
 
   private void initContentView() {
@@ -263,7 +276,13 @@ public class MainActivity extends AppCompatActivity {
     findViewById(R.id.buttonSaveImage).setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-        saveImageToGallery();
+        if (mInterstitialAd.isLoaded()) {
+          mInterstitialAd.show();
+        } else {
+          Log.d(TAG, "Interstitial ad is not loaded yet");
+        }
+        mIsInterstitialAdOpen = true;
+        initiateSavingImage();
       }
     });
     findViewById(R.id.buttonHelp).setOnClickListener(new View.OnClickListener() {
@@ -645,7 +664,7 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
-  private Thread createImageUpdaterThread(){
+  private Thread createImageUpdaterThread() {
     return new Thread() {
       @Override
       public void run() {
@@ -657,7 +676,19 @@ public class MainActivity extends AppCompatActivity {
     };
   }
 
-  void adjustUiComponentsToBeAdjustedAfterViewsHaveBeenCreated() {
+  private Thread createImageSaverThread() {
+    return new Thread() {
+      @Override
+      public void run() {
+        Looper.prepare();
+        mImageSaverHandler = new Handler() {
+        };
+        Looper.loop();
+      }
+    };
+  }
+
+  void adjustCreatedUiComponents() {
     SeekBar seekBarSrcCamHfovDeg = findViewById(R.id.seekBarSrcCamHfovDeg);
     seekBarSrcCamHfovDeg.setProgress(valueScaleToSeekBarScale(seekBarSrcCamHfovDeg,
         mSrcCamParameters.hfovDeg, SRCCAM_HFOVDEG_MAX));
@@ -709,27 +740,27 @@ public class MainActivity extends AppCompatActivity {
     ((AdView) findViewById(R.id.adView)).setAdListener(new AdListener() {
       @Override
       public void onAdLoaded() {
-        Log.d(TAG, "Ad loaded");
+        Log.d(TAG, "Banner ad loaded");
       }
 
       @Override
       public void onAdFailedToLoad(int errorCode) {
-        Log.d(TAG, "Failed to load ad: " + errorCode);
+        Log.d(TAG, "Failed to load banner ad: " + errorCode);
       }
 
       @Override
       public void onAdOpened() {
-        Log.d(TAG, "Ad opened");
+        Log.d(TAG, "Banner ad opened");
       }
 
       @Override
       public void onAdLeftApplication() {
-        Log.d(TAG, "Ad left application");
+        Log.d(TAG, "Banner ad left application");
       }
 
       @Override
       public void onAdClosed() {
-        Log.d(TAG, "Ad closed");
+        Log.d(TAG, "Banner ad closed");
       }
     });
 
@@ -872,6 +903,58 @@ public class MainActivity extends AppCompatActivity {
     mIsHelpVisible = true;
   }
 
+  private void initAds() {
+    if (RELEASECONFIG.releaseType == RELEASE_TYPE.FREE) {
+      // TODO If you need to obtain consent from users in the European Economic Area (EEA), set any request-specific flags (such as tagForChildDirectedTreatment or tag_for_under_age_of_consent), or otherwise take action before loading ads, ensure you do so before initializing the Mobile Ads SDK.
+      MobileAds.initialize(this, new OnInitializationCompleteListener() {
+        @Override
+        public void onInitializationComplete(InitializationStatus initializationStatus) {
+        }
+      });
+    }
+    mInterstitialAd = new InterstitialAd(this);
+    mInterstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712");
+    mInterstitialAd.setAdListener(new AdListener() {
+      @Override
+      public void onAdLoaded() {
+      }
+
+      @Override
+      public void onAdFailedToLoad(int errorCode) {
+      }
+
+      @Override
+      public void onAdOpened() {
+        mIsInterstitialAdOpen = true;
+      }
+
+      @Override
+      public void onAdClicked() {
+      }
+
+      @Override
+      public void onAdLeftApplication() {
+      }
+
+      @Override
+      public void onAdClosed() {
+        if (!mImageSavedNotificationText.isEmpty()) {
+          notifyUserThatImageIsSaved();
+        }
+        mIsInterstitialAdOpen = false;
+        mInterstitialAd.loadAd(new AdRequest.Builder().build());
+      }
+    });
+    mInterstitialAd.loadAd(new AdRequest.Builder().build());
+    mIsInterstitialAdOpen = false;
+    mImageSavedNotificationText = "";
+  }
+
+  void notifyUserThatImageIsSaved() {
+    Toast.makeText(mContext, mImageSavedNotificationText, Toast.LENGTH_LONG).show();
+    mImageSavedNotificationText = "";
+  }
+
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent intent) {
     super.onActivityResult(requestCode, resultCode, intent);
@@ -933,44 +1016,44 @@ public class MainActivity extends AppCompatActivity {
       try {
         loadedImage = MediaStore.Images.Media.getBitmap(this.getContentResolver(),
             imageUri).copy(Bitmap.Config.ARGB_8888, false);
-      Log.d(TAG, "loadedImage size in onActivityResult(.): " + loadedImage.getWidth()
-          + "x" + loadedImage.getHeight());
-      if (mSrcImage.getWidth() > 0 && mSrcImage.getHeight() > 0
-          && mSrcImage.getWidth() <= MAX_IMAGE_SIZE_PX
-          && mSrcImage.getHeight() <= MAX_IMAGE_SIZE_PX) {
-        mSrcImage = loadedImage;
-        mSrcCamParameters = new FisheyeParameters(mSrcImage);
-        //final float pixelDensity = 1.0f;
-        // From gallery the bitmap size tells the actual image resolution, don't know why
-        mDstCamParameters.imageWidthPx = mSrcImage.getWidth();
-        mDstCamParameters.imageHeightPx = mSrcImage.getHeight();
-        Log.d(TAG, "mDstImageSizePx in onActivityResult(.): "
-            + mDstCamParameters.imageWidthPx + "x" + mDstCamParameters.imageHeightPx);
-        postRecalculateImagesIfHandlerIsCreated();
+        Log.d(TAG, "loadedImage size in onActivityResult(.): " + loadedImage.getWidth()
+            + "x" + loadedImage.getHeight());
+        if (mSrcImage.getWidth() > 0 && mSrcImage.getHeight() > 0
+            && mSrcImage.getWidth() <= MAX_IMAGE_SIZE_PX
+            && mSrcImage.getHeight() <= MAX_IMAGE_SIZE_PX) {
+          mSrcImage = loadedImage;
+          mSrcCamParameters = new FisheyeParameters(mSrcImage);
+          //final float pixelDensity = 1.0f;
+          // From gallery the bitmap size tells the actual image resolution, don't know why
+          mDstCamParameters.imageWidthPx = mSrcImage.getWidth();
+          mDstCamParameters.imageHeightPx = mSrcImage.getHeight();
+          Log.d(TAG, "mDstImageSizePx in onActivityResult(.): "
+              + mDstCamParameters.imageWidthPx + "x" + mDstCamParameters.imageHeightPx);
+          postRecalculateImagesIfHandlerIsCreated();
 
-        ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
-        final String srcImageSizeText = mSrcImage.getWidth()
-            + " x " + mSrcImage.getHeight() + " " + getResources().getString(R.string.px);
-        ((TextView) findViewById(R.id.textViewSrcCamImageSize)).setText(srcImageSizeText);
-        SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
-        seekBarSrcCamPrincipalPointXPx.setProgress(
-            valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointXPx,
-                mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
-        SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointYPx);
-        seekBarSrcCamPrincipalPointYPx.setProgress(
-            valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
-                mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
-        ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(
-            String.format(Locale.US, "%d", mDstCamParameters.imageWidthPx));
-        ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(
-            String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
-      } else {
-        Toast.makeText(this, "Input image must be max. "
-            + MAX_IMAGE_SIZE_PX + " x " + MAX_IMAGE_SIZE_PX + " pixels (and min. 1x1 pixels)",
-            Toast.LENGTH_LONG).show();
-      }
-      textViewStatus.setText(getResources().getString(R.string.status));
-      textViewStatus.setVisibility(View.INVISIBLE);
+          ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
+          final String srcImageSizeText = mSrcImage.getWidth()
+              + " x " + mSrcImage.getHeight() + " " + getResources().getString(R.string.px);
+          ((TextView) findViewById(R.id.textViewSrcCamImageSize)).setText(srcImageSizeText);
+          SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
+          seekBarSrcCamPrincipalPointXPx.setProgress(
+              valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointXPx,
+                  mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
+          SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointYPx);
+          seekBarSrcCamPrincipalPointYPx.setProgress(
+              valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
+                  mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
+          ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(
+              String.format(Locale.US, "%d", mDstCamParameters.imageWidthPx));
+          ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(
+              String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
+        } else {
+          Toast.makeText(this, "Input image must be max. "
+                  + MAX_IMAGE_SIZE_PX + " x " + MAX_IMAGE_SIZE_PX + " pixels (and min. 1x1 pixels)",
+              Toast.LENGTH_LONG).show();
+        }
+        textViewStatus.setText(getResources().getString(R.string.status));
+        textViewStatus.setVisibility(View.INVISIBLE);
       } catch (Exception e) {
         Log.e(TAG, Utils.stackTraceToString(e));
       }
@@ -988,47 +1071,70 @@ public class MainActivity extends AppCompatActivity {
     startActivityForResult(intent, PICKIMAGEFROMGALLERY_REQUESTCODE);
   }
 
-  private void saveImageToGallery() {
-    Log.d(TAG, "Saving image to gallery...");
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-      Log.i(TAG, "App does not have write permission");
-      //<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:remove="android:maxSdkVersion" />
-      //<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="replace"/>
-      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITEEXTERNALSTORAGE_REQUESTCODE);
-      //Toast.makeText(this, "App does not have permission to write to storage. Adjust app permissions in your App Settings", Toast.LENGTH_SHORT).show();
-    } else {
-      Log.i(TAG, "App has write permission");
-      //String imageFilename = "linear_" + Utils.getDateTimeStr() + "." + Utils.JPG_STR;
-      String imageFilename = "linear_" + Utils.getDateTimeStr() + "." + Utils.PNG_STR;
-      LinearLayout layoutStatusPanel = findViewById(R.id.layoutStatusPanel);
-      TextView textViewStatus = findViewById(R.id.textViewStatus);
-      textViewStatus.setText(getResources().getString(R.string.saving_image));
-      layoutStatusPanel.setVisibility(View.VISIBLE);
-      switch (RELEASECONFIG.releaseType) {
-        case FREE:
-          final Bitmap reducedDstImage = Utils.reduceImageToFit(mDstImage,
-              RELEASECONFIG.maxSavedImageSizePx[0], RELEASECONFIG.maxSavedImageSizePx[1]);
-          Utils.saveImageToExternalStorage(this, reducedDstImage, imageFilename);
-          Toast.makeText(this, "Saved image \'" + imageFilename + "\' to Gallery in "
-              + reducedDstImage.getWidth() + "x"
-              + reducedDstImage.getHeight() + " resolution.\n\n"
-              + getString(R.string.buy_pro_for_high_resolution), Toast.LENGTH_LONG).show();
-          break;
-        case PRO:
-          try {
-            Utils.saveImageToExternalStorage(this, mDstImage, imageFilename);
-            Toast.makeText(this, "Saved image \'" + imageFilename + "\' to Gallery.",
-                Toast.LENGTH_LONG).show();
-          } catch (RuntimeException re) {
-            Toast.makeText(this, re.getMessage(), Toast.LENGTH_LONG).show();
-          }
-          break;
+  private void initiateSavingImage() {
+    if (mDstImage != null) {
+      Log.d(TAG, "Saving image to gallery...");
+      if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        Log.i(TAG, "App does not have write permission");
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITEEXTERNALSTORAGE_REQUESTCODE);
+      } else {
+        Log.i(TAG, "App has write permission");
+        mDstImageFilename = "linear_" + Utils.getDateTimeStr() + "." + Utils.PNG_STR;
+        LinearLayout layoutStatusPanel = findViewById(R.id.layoutStatusPanel);
+        TextView textViewStatus = findViewById(R.id.textViewStatus);
+        textViewStatus.setText(getResources().getString(R.string.saving_image));
+        layoutStatusPanel.setVisibility(View.VISIBLE);
+
+        Toast.makeText(this, getResources().getString(R.string.saving_image),
+            Toast.LENGTH_SHORT).show();
+        mImageSaverHandler.post(createSaveImageToGalleryRunnable());
+
+        layoutStatusPanel.setVisibility(View.INVISIBLE);
+        textViewStatus.setText(getResources().getString(R.string.status));
       }
-      layoutStatusPanel.setVisibility(View.INVISIBLE);
-      textViewStatus.setText(getResources().getString(R.string.status));
     }
   }
 
+  private Runnable createSaveImageToGalleryRunnable() {
+    return new Runnable() {
+      @Override
+      public void run() {
+        saveImageToGallery();
+      }
+    };
+  }
+
+  private void saveImageToGallery() {
+    switch (RELEASECONFIG.releaseType) {
+      case FREE:
+        try {
+          final Bitmap reducedDstImage = Utils.reduceImageToFit(mDstImage,
+              RELEASECONFIG.maxSavedImageSizePx[0], RELEASECONFIG.maxSavedImageSizePx[1]);
+          Utils.saveImageToExternalStorage(this, reducedDstImage, mDstImageFilename);
+          mImageSavedNotificationText = "Image \'" + mDstImageFilename + "\' saved to gallery in "
+              + reducedDstImage.getWidth() + "x"
+              + reducedDstImage.getHeight() + " resolution.\n\n"
+              + getString(R.string.buy_pro_for_high_resolution)
+              + "\n\n" + getResources().getString(R.string.may_take_time_to_appear_in_gallery);
+          if (!mIsInterstitialAdOpen) {
+            notifyUserThatImageIsSaved();
+          }
+        } catch (RuntimeException re) {
+          Toast.makeText(this, re.getMessage(), Toast.LENGTH_LONG).show();
+        }
+        break;
+      case PRO:
+        try {
+          Utils.saveImageToExternalStorage(this, mDstImage, mDstImageFilename);
+          mImageSavedNotificationText = "Image \'" + mDstImageFilename + "\' saved to gallery.\n\n"
+              + getResources().getString(R.string.may_take_time_to_appear_in_gallery);
+          notifyUserThatImageIsSaved();
+        } catch (RuntimeException re) {
+          Toast.makeText(this, re.getMessage(), Toast.LENGTH_LONG).show();
+        }
+        break;
+    }
+  }
 
   void recalculateUpdatedImages() {
     mDstImage = mImageTransformer.linearize(mSrcImage, mSrcCamParameters, mDstCamParameters);
@@ -1116,7 +1222,7 @@ public class MainActivity extends AppCompatActivity {
       findViewById(R.id.imageViewDstCamOverlay).setVisibility(View.INVISIBLE);
     }
 
-    if (RELEASECONFIG.releaseType == RELEASE_TYPE.PRO) {
+    if (RELEASECONFIG.releaseType == RELEASE_TYPE.FREE) {
       ((AdView) findViewById(R.id.adView)).loadAd(new AdRequest.Builder().build());
     }
   }
@@ -1187,23 +1293,23 @@ public class MainActivity extends AppCompatActivity {
 
     mAppUpdateManager.getAppUpdateInfo().addOnSuccessListener(
         new OnSuccessListener<AppUpdateInfo>() {
-      @Override
-      public void onSuccess(AppUpdateInfo appUpdateInfo) {
-        if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-            && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
-          try {
-            mAppUpdateManager.startUpdateFlowForResult(appUpdateInfo, AppUpdateType.FLEXIBLE,
-                MainActivity.this, UPDATEAPP_REQUESTCODE);
-          } catch (IntentSender.SendIntentException sie) {
-            Log.e(TAG, Utils.stackTraceToString(sie));
+          @Override
+          public void onSuccess(AppUpdateInfo appUpdateInfo) {
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+              try {
+                mAppUpdateManager.startUpdateFlowForResult(appUpdateInfo, AppUpdateType.FLEXIBLE,
+                    MainActivity.this, UPDATEAPP_REQUESTCODE);
+              } catch (IntentSender.SendIntentException sie) {
+                Log.e(TAG, Utils.stackTraceToString(sie));
+              }
+            } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+              askUserToCompleteUpdate();
+            } else {
+              Log.w(TAG, "Unhandled branch in appUpdateInfoTask");
+            }
           }
-        } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-          askUserToCompleteUpdate();
-        } else {
-          Log.w(TAG, "Unhandled branch in appUpdateInfoTask");
-        }
-      }
-    });
+        });
 
   }
 
