@@ -1,7 +1,9 @@
 /*
  * TODO
  * - Measure hfovs
- * - Tests
+ * - Solve OOM in ITs
+ * - Implement ITs
+ * - Free: watermark instead of img size limit
  * - Free/Pro with productFlavors {...
  * - Screenshots for Play Store
  * - RELEASE
@@ -162,6 +164,15 @@ public class MainActivity extends AppCompatActivity {
   private ImageView mSrcCamView;
   private ImageView mDstCamView;
   private ImageView mDstCamOverlayView;
+
+  DstCamParameters getDstCamParameters() {
+    return mDstCamParameters;
+  }
+
+  Bitmap getDstImage() {
+    final Bitmap finalDstImage = mDstImage;
+    return finalDstImage;
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -885,12 +896,12 @@ public class MainActivity extends AppCompatActivity {
     findViewById(R.id.seekBarSrcCamPrincipalPointXPx).setVisibility(visibility);
     findViewById(R.id.textViewSrcCamPrincipalPointY).setVisibility(visibility);
     findViewById(R.id.seekBarSrcCamPrincipalPointYPx).setVisibility(visibility);
+    findViewById(R.id.textViewDstCamRollDeg).setVisibility(visibility);
+    findViewById(R.id.seekBarDstCamRollDeg).setVisibility(visibility);
     findViewById(R.id.textViewDstCamPitchDeg).setVisibility(visibility);
     findViewById(R.id.seekBarDstCamPitchDeg).setVisibility(visibility);
     findViewById(R.id.textViewDstCamYawDeg).setVisibility(visibility);
     findViewById(R.id.seekBarDstCamYawDeg).setVisibility(visibility);
-    findViewById(R.id.textViewDstCamRollDeg).setVisibility(visibility);
-    findViewById(R.id.seekBarDstCamRollDeg).setVisibility(visibility);
   }
 
   private void initDstCamUi() {
@@ -1074,12 +1085,15 @@ public class MainActivity extends AppCompatActivity {
   private void initiateSavingImage() {
     if (mDstImage != null) {
       Log.d(TAG, "Saving image to gallery...");
-      if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+      if (ContextCompat.checkSelfPermission(this,
+          Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
         Log.i(TAG, "App does not have write permission");
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITEEXTERNALSTORAGE_REQUESTCODE);
+        ActivityCompat.requestPermissions(this, new String[]{
+            Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITEEXTERNALSTORAGE_REQUESTCODE);
       } else {
         Log.i(TAG, "App has write permission");
-        mDstImageFilename = "linear_" + Utils.getDateTimeStr() + "." + Utils.PNG_STR;
+        mDstImageFilename = getResources().getString(R.string.app_name) + "_"
+            + Utils.getDateTimeStr() + "." + Utils.PNG_STR;
         LinearLayout layoutStatusPanel = findViewById(R.id.layoutStatusPanel);
         TextView textViewStatus = findViewById(R.id.textViewStatus);
         textViewStatus.setText(getResources().getString(R.string.saving_image));

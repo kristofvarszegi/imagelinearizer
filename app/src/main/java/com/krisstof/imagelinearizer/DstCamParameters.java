@@ -34,6 +34,12 @@ final class DstCamParameters {
     this.yawDeg = yawDeg;
   }
 
+  @Override
+  public DstCamParameters clone() {
+    return new DstCamParameters(geometry, hfovDeg, imageWidthPx, imageHeightPx,
+        rollDeg, pitchDeg, yawDeg);
+  }
+
   int getGeometryId() {
     switch (geometry) {
       case PINHOLE:
