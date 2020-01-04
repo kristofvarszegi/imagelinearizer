@@ -18,7 +18,7 @@
         android:orientation="vertical" >
 
         <TextView
-            android:id="@+id/textViewSrcCamParametersTitle"
+            android:id="@+id/textViewSrcCamParsTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/colorPrimary"
@@ -111,7 +111,7 @@
             android:background="@color/colorPrimaryDark" />
 
         <TextView
-            android:id="@+id/textViewDstCamParametersTitle"
+            android:id="@+id/textViewDstCamParsTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/colorPrimary"
@@ -146,10 +146,11 @@
                 android:id="@+id/spinnerDstCamGeometry"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/colorPrimary"
                 android:entries="@array/dst_cam_geometry_choices"
                 android:gravity="center_horizontal"
-                android:spinnerMode="dropdown" />
+                android:spinnerMode="dropdown"
+                android:background="@android:color/transparent"
+                android:layout_marginStart="2dp" />
         </LinearLayout>
 
         <View

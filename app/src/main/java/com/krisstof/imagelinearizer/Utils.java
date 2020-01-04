@@ -38,7 +38,9 @@ abstract class Utils {
   static final String JPG_STR = "jpg";
   static final String PNG_STR = "png";
 
-  static int getDeviceOrientation(DisplayMetrics displayMetrics) {
+  static int getDeviceOrientation(final Activity activity) {
+    DisplayMetrics displayMetrics = new DisplayMetrics();
+    activity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
     if (displayMetrics.widthPixels <= displayMetrics.heightPixels) {
       return Configuration.ORIENTATION_PORTRAIT;
     } else {

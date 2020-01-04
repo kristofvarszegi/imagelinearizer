@@ -55,6 +55,8 @@ final class ImageTransformer {
     mLinearizeScript.forEach_linearize(dstImageAllocation);
     Bitmap dstImage = Bitmap.createBitmap(dstCamParameters.imageWidthPx,
         dstCamParameters.imageHeightPx, Bitmap.Config.ARGB_8888);
+    Log.d(TAG, "dstCamParameters: " + dstCamParameters.toString());
+    Log.d(TAG, "dstImage size: " + dstImage.getWidth() + ", " + dstImage.getHeight());
     dstImageAllocation.copyTo(dstImage);
     /*if (dstCamParameters.imageWidthPx != srcImage.getWidth()
         || dstCamParameters.imageHeightPx != srcImage.getHeight()) {

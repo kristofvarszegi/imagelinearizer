@@ -21,6 +21,7 @@
     <View
         android:layout_width="1dp"
         android:layout_height="@dimen/menubar_vrheight"
+        android:layout_gravity="center_vertical"
         android:layout_marginStart="0dp"
         android:layout_marginTop="@dimen/menubar_topbottommargin"
         android:layout_marginEnd="5dp"

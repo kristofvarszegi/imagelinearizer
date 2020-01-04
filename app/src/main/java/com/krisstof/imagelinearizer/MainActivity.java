@@ -47,7 +47,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -137,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
   private Context mContext;
   private Thread mImageUpdaterThread;
   private Handler mImageUpdaterHandler;
+  private boolean mIsHelpVisible;
 
   private AppUpdateManager mAppUpdateManager;
   private InstallStateUpdatedListener mInstallStateUpdatedListener;
@@ -169,10 +169,16 @@ public class MainActivity extends AppCompatActivity {
 
     mContext = getApplicationContext();
     mImageTransformer = new ImageTransformer(this);
-    mImageUpdaterThread = createImageUpdaterThread();
-    mImageUpdaterThread.start();
+    mIsHelpVisible = false;
     initUi();
-    findViewById(R.id.layoutHelpPanel).setVisibility(View.GONE);
+    mDstCamOverlayView.post(new Runnable() {
+      @Override
+      public void run() {
+        adjustUiComponentsToBeAdjustedAfterViewsHaveBeenCreated();
+        mImageUpdaterThread = createImageUpdaterThread();
+        mImageUpdaterThread.start();
+      }
+    });
   }
 
   @Override
@@ -190,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
     Log.d(TAG, "onConfigurationChanged(.)...");
     super.onConfigurationChanged(newConfig);
     initUi();
-    mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+    postRecalculateImagesIfHandlerIsCreated();
   }
 
   @Override
@@ -232,9 +238,7 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void initContentView() {
-    DisplayMetrics displayMetrics = new DisplayMetrics();
-    getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-    final int deviceOrientation = Utils.getDeviceOrientation(displayMetrics);
+    final int deviceOrientation = Utils.getDeviceOrientation(this);
     switch (deviceOrientation) {
       case ORIENTATION_LANDSCAPE:
         Log.d(TAG, "Device orientation is landscape");
@@ -314,6 +318,12 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void initCameraParametersUi() {
+    if (Utils.getDeviceOrientation(this) == Configuration.ORIENTATION_LANDSCAPE) {
+      ((TextView) findViewById(R.id.textViewSrcCamParsTitle)).setLines(2);
+    }
+    if (Utils.getDeviceOrientation(this) == Configuration.ORIENTATION_LANDSCAPE) {
+      ((TextView) findViewById(R.id.textViewSrcCamHfovDeg)).setLines(2);
+    }
     SeekBar seekBarSrcCamHfovDeg = findViewById(R.id.seekBarSrcCamHfovDeg);
     seekBarSrcCamHfovDeg.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -321,7 +331,7 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.textViewSrcCamHfovDeg)).setText(String.format(
             Locale.getDefault(), getResources().getString(R.string.srccam_hfovdeg_label) + ": " + FLOAT_FORMAT_STR + "°",
             mSrcCamParameters.hfovDeg));
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
       }
 
       @Override
@@ -339,7 +349,7 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.textViewSrcCamFocalOffset)).setText(String.format(
             Locale.getDefault(), getResources().getString(R.string.srccam_focaloffset_label)
                 + ": " + FLOAT_FORMAT_STR, mSrcCamParameters.focalOffset));
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
       }
 
       @Override
@@ -361,7 +371,7 @@ public class MainActivity extends AppCompatActivity {
             String.format(Locale.getDefault(), getResources().getString(
                 R.string.srccam_principalpointx_label) + ": " + FLOAT_FORMAT_STR,
                 mSrcCamParameters.principalPointXPx));
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
       }
 
       @Override
@@ -384,7 +394,7 @@ public class MainActivity extends AppCompatActivity {
             Locale.getDefault(), getResources().getString(
                 R.string.srccam_principalpointy_label) + ": " + FLOAT_FORMAT_STR + "",
             mSrcCamParameters.principalPointYPx));
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
       }
 
       @Override
@@ -396,15 +406,20 @@ public class MainActivity extends AppCompatActivity {
       }
     });
 
+    if (Utils.getDeviceOrientation(this) == Configuration.ORIENTATION_LANDSCAPE) {
+      ((TextView) findViewById(R.id.textViewDstCamParsTitle)).setLines(2);
+    }
     Spinner spinnerDstCamGeometry = findViewById(R.id.spinnerDstCamGeometry);
     spinnerDstCamGeometry.setAdapter(new ArrayAdapter<>(this,
-        R.layout.spinner_layout, getResources().getStringArray(R.array.dst_cam_geometry_choices)));
+        R.layout.spinner_item, getResources().getStringArray(R.array.dst_cam_geometry_choices)));
     spinnerDstCamGeometry.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
       @Override
       public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
         mDstCamParameters.geometry = cameraGeometry((String) parentView.getItemAtPosition(position),
             mContext);
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
+        //Toast.makeText(this, getResources().getString(R.string.setting_dstcam_geometry),
+        //    Toast.LENGTH_SHORT).show());
       }
 
       @Override
@@ -419,7 +434,7 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.textViewDstCamHfovDeg)).setText(String.format(
             Locale.getDefault(), getResources().getString(R.string.dstcam_hfovdeg_label) + ": " + FLOAT_FORMAT_STR + "°",
             mDstCamParameters.hfovDeg));
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
       }
 
       @Override
@@ -447,7 +462,7 @@ public class MainActivity extends AppCompatActivity {
             false);
         if (readValue != null) {
           mDstCamParameters.imageWidthPx = readValue;
-          mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+          postRecalculateImagesIfHandlerIsCreated();
         }
       }
     });
@@ -462,7 +477,7 @@ public class MainActivity extends AppCompatActivity {
             FrameLayout layoutAll = findViewById(R.id.layoutMainContent);
             if (layoutAll != null) {
               //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
-              mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+              postRecalculateImagesIfHandlerIsCreated();
             }
           }
           Log.d(TAG, "Hiding keyboard...");
@@ -489,7 +504,7 @@ public class MainActivity extends AppCompatActivity {
             false);
         if (readValue != null) {
           mDstCamParameters.imageHeightPx = readValue;
-          mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+          postRecalculateImagesIfHandlerIsCreated();
         }
       }
     });
@@ -501,7 +516,7 @@ public class MainActivity extends AppCompatActivity {
               mDstCamParameters.imageHeightPx, true);
           if (readValue != null) {
             mDstCamParameters.imageHeightPx = readValue;
-            mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+            postRecalculateImagesIfHandlerIsCreated();
           }
           Log.d(TAG, "Hiding keyboard...");
           Utils.hideKeyboard(v, mContext);
@@ -511,6 +526,9 @@ public class MainActivity extends AppCompatActivity {
     editTextDstImageHeightPx.setBackgroundColor(getResources().getColor(
         R.color.halfTransparentBlack));
 
+    if (Utils.getDeviceOrientation(this) == Configuration.ORIENTATION_LANDSCAPE) {
+      ((TextView) findViewById(R.id.textViewDstCamRollDeg)).setLines(2);
+    }
     SeekBar seekBarDstCamRollDeg = findViewById(R.id.seekBarDstCamRollDeg);
     seekBarDstCamRollDeg.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -519,7 +537,7 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.textViewDstCamRollDeg)).setText(String.format(
             Locale.getDefault(), getResources().getString(R.string.dstcam_rolldeg_label)
                 + ": " + FLOAT_FORMAT_STR + "°", mDstCamParameters.rollDeg));
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
       }
 
       @Override
@@ -530,6 +548,9 @@ public class MainActivity extends AppCompatActivity {
       public void onStopTrackingTouch(SeekBar seekbar) {
       }
     });
+    if (Utils.getDeviceOrientation(this) == Configuration.ORIENTATION_LANDSCAPE) {
+      ((TextView) findViewById(R.id.textViewDstCamPitchDeg)).setLines(2);
+    }
     SeekBar seekBarDstCamPitchDeg = findViewById(R.id.seekBarDstCamPitchDeg);
     seekBarDstCamPitchDeg.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -538,7 +559,7 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.textViewDstCamPitchDeg)).setText(String.format(
             Locale.getDefault(), getResources().getString(R.string.dstcam_pitchdeg_label)
                 + ": " + FLOAT_FORMAT_STR + "°", mDstCamParameters.pitchDeg));
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
       }
 
       @Override
@@ -549,6 +570,9 @@ public class MainActivity extends AppCompatActivity {
       public void onStopTrackingTouch(SeekBar seekbar) {
       }
     });
+    if (Utils.getDeviceOrientation(this) == Configuration.ORIENTATION_LANDSCAPE) {
+      ((TextView) findViewById(R.id.textViewDstCamYawDeg)).setLines(2);
+    }
     SeekBar seekBarDstCamYawDeg = findViewById(R.id.seekBarDstCamYawDeg);
     seekBarDstCamYawDeg.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -557,7 +581,7 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.textViewDstCamYawDeg)).setText(String.format(
             Locale.getDefault(), getResources().getString(R.string.dstcam_yawdeg_label)
                 + ": " + FLOAT_FORMAT_STR + "°", mDstCamParameters.yawDeg));
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
       }
 
       @Override
@@ -582,7 +606,7 @@ public class MainActivity extends AppCompatActivity {
         new CompoundButton.OnCheckedChangeListener() {
           @Override
           public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+            postRecalculateImagesIfHandlerIsCreated();
           }
         });
   }
@@ -611,8 +635,14 @@ public class MainActivity extends AppCompatActivity {
       @Override
       public void onClick(View v) {
         findViewById(R.id.layoutHelpPanel).setVisibility(View.GONE);
+        mIsHelpVisible = false;
       }
     });
+    if (mIsHelpVisible) {
+      findViewById(R.id.layoutHelpPanel).setVisibility(View.VISIBLE);
+    } else {
+      findViewById(R.id.layoutHelpPanel).setVisibility(View.GONE);
+    }
   }
 
   private Thread createImageUpdaterThread(){
@@ -664,9 +694,7 @@ public class MainActivity extends AppCompatActivity {
     seekBarDstCamYawDeg.setProgress(valueScaleToSeekBarScale(seekBarDstCamYawDeg,
         mDstCamParameters.yawDeg + 0.5f * DSTCAM_YAW_SPAN_DEG, DSTCAM_YAW_SPAN_DEG));
 
-    DisplayMetrics displayMetrics = new DisplayMetrics();
-    getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-    final int deviceOrientation = Utils.getDeviceOrientation(displayMetrics);
+    final int deviceOrientation = Utils.getDeviceOrientation(this);
     switch (deviceOrientation) {
       case ORIENTATION_LANDSCAPE:
         adjustViewsToLandscapeOrientation();
@@ -712,6 +740,7 @@ public class MainActivity extends AppCompatActivity {
 
   Integer readValueIfTextIsValid(EditText editText, int existingValue,
                                  boolean resetTextIfZero) {
+    Log.d(TAG, "Edit field text: " + editText);
     Integer retVal = null;
     final String text = editText.getText().toString();
     boolean needToResetText = false;
@@ -720,6 +749,7 @@ public class MainActivity extends AppCompatActivity {
         int newDstImageHeightPx = Integer.parseInt(text);
         if (newDstImageHeightPx > 0 && newDstImageHeightPx <= MAX_IMAGE_SIZE_PX) {
           retVal = newDstImageHeightPx;
+          Log.d(TAG, "Edit text's number value: " + retVal);
           if (text.charAt(0) == '0') {
             editText.setText(String.format(Locale.US, "%d", retVal));
           }
@@ -835,16 +865,11 @@ public class MainActivity extends AppCompatActivity {
   private void initDstCamUi() {
     mDstCamView = findViewById(R.id.imageViewDstCam);
     mDstCamOverlayView = findViewById(R.id.imageViewDstCamOverlay);
-    mDstCamOverlayView.post(new Runnable() {
-      @Override
-      public void run() {
-        adjustUiComponentsToBeAdjustedAfterViewsHaveBeenCreated();
-      }
-    });
   }
 
   private void showHelp() {
     findViewById(R.id.layoutHelpPanel).setVisibility(View.VISIBLE);
+    mIsHelpVisible = true;
   }
 
   @Override
@@ -910,7 +935,9 @@ public class MainActivity extends AppCompatActivity {
             imageUri).copy(Bitmap.Config.ARGB_8888, false);
       Log.d(TAG, "loadedImage size in onActivityResult(.): " + loadedImage.getWidth()
           + "x" + loadedImage.getHeight());
-      if (mSrcImage.getWidth() <= MAX_IMAGE_SIZE_PX && mSrcImage.getHeight() <= MAX_IMAGE_SIZE_PX) {
+      if (mSrcImage.getWidth() > 0 && mSrcImage.getHeight() > 0
+          && mSrcImage.getWidth() <= MAX_IMAGE_SIZE_PX
+          && mSrcImage.getHeight() <= MAX_IMAGE_SIZE_PX) {
         mSrcImage = loadedImage;
         mSrcCamParameters = new FisheyeParameters(mSrcImage);
         //final float pixelDensity = 1.0f;
@@ -919,7 +946,7 @@ public class MainActivity extends AppCompatActivity {
         mDstCamParameters.imageHeightPx = mSrcImage.getHeight();
         Log.d(TAG, "mDstImageSizePx in onActivityResult(.): "
             + mDstCamParameters.imageWidthPx + "x" + mDstCamParameters.imageHeightPx);
-        mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+        postRecalculateImagesIfHandlerIsCreated();
 
         ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
         final String srcImageSizeText = mSrcImage.getWidth()
@@ -938,9 +965,9 @@ public class MainActivity extends AppCompatActivity {
         ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(
             String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
       } else {
-        Toast.makeText(this, "Output image must be max. "
-            + MAX_IMAGE_SIZE_PX + " pixels wide and max. "
-            + MAX_IMAGE_SIZE_PX + " pixels high", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Input image must be max. "
+            + MAX_IMAGE_SIZE_PX + " x " + MAX_IMAGE_SIZE_PX + " pixels (and min. 1x1 pixels)",
+            Toast.LENGTH_LONG).show();
       }
       textViewStatus.setText(getResources().getString(R.string.status));
       textViewStatus.setVisibility(View.INVISIBLE);
@@ -1057,7 +1084,7 @@ public class MainActivity extends AppCompatActivity {
       if (mDstCamView.getWidth() > 0 && mDstCamView.getHeight() > 0) {
         int gridCellSizePx = Math.max((int) ((float) Math.max(mDstCamView.getWidth(), mDstCamView.getHeight())
             / (float) GRIDOVERLAY_CELLCOUNT), 2);
-        final int deviceOrientation = Utils.getDeviceOrientation(displayMetrics);
+        final int deviceOrientation = Utils.getDeviceOrientation(this);
         switch (deviceOrientation) {
           case ORIENTATION_LANDSCAPE:
             mDstCamOverlayView.setImageBitmap(
@@ -1111,6 +1138,12 @@ public class MainActivity extends AppCompatActivity {
         updateImagesInUi();
       }
     };
+  }
+
+  private void postRecalculateImagesIfHandlerIsCreated() {
+    if (mImageUpdaterHandler != null) {
+      mImageUpdaterHandler.post(createRecalculateImagesRunnable());
+    }
   }
 
   static float seekBarScaleToValueScale(final SeekBar seekBar, int progress, float valueMax) {

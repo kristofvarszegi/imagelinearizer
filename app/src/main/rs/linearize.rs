@@ -325,57 +325,29 @@ uchar4 __attribute__((kernel)) linearize(uint32_t x, uint32_t y) {
   float2 dstImagePoint;
   dstImagePoint.x = (float) x + 0.5f;
   dstImagePoint.y = (float) y + 0.5f;
-  float3 camSpaceVec;
+  float3 camSpaceRayVec;
   switch (dstCamGeometryId) {
     case 0:
-      camSpaceVec = pinholeImageSpaceToCameraSpace(dstImagePoint);
+      camSpaceRayVec = pinholeImageSpaceToCameraSpace(dstImagePoint);
       break;
     case 1:
-      camSpaceVec = equirectangularImageSpaceToCameraSpace(dstImagePoint);
+      camSpaceRayVec = equirectangularImageSpaceToCameraSpace(dstImagePoint);
       break;
   }
-  const float2 srcImagePointPx = fisheyeCameraSpaceToImageSpace(
-      rotateCamSpaceVec(camSpaceVec, dstCamRollDeg, dstCamPitchDeg, dstCamYawDeg));
-  //srcImagePointPx.x = -1;
-  //srcImagePointPx.y = -1;
   uchar4 outputColor;
-  if (srcImagePointPx.x >= 0.f && srcImagePointPx.x < srcImageWidthPx
-      && srcImagePointPx.y >= 0.f && srcImagePointPx.y < srcImageHeightPx) {
-    uchar4 topLeftColor = rsGetElementAt_uchar4(srcImage, floor(srcImagePointPx.x), floor(srcImagePointPx.y));
-
-    uchar4 topRightColor = topLeftColor;
-    if (ceil(srcImagePointPx.x) < srcImageWidthPx) {
-      topRightColor = rsGetElementAt_uchar4(srcImage, ceil(srcImagePointPx.x), floor(srcImagePointPx.y));
-    }
-
-    uchar4 bottomLeftColor = topLeftColor;
-    if (ceil(srcImagePointPx.y) < srcImageHeightPx) {
-      bottomLeftColor = rsGetElementAt_uchar4(srcImage, floor(srcImagePointPx.x), ceil(srcImagePointPx.y));
-    }
-
-    uchar4 bottomRightColor;
-    if (ceil(srcImagePointPx.x) < srcImageWidthPx) {
-      if (ceil(srcImagePointPx.y) < srcImageHeightPx) {
-        bottomRightColor = rsGetElementAt_uchar4(srcImage, ceil(srcImagePointPx.x), ceil(srcImagePointPx.y));
-      } else {
-        bottomRightColor = topRightColor;
+  outputColor.a = 255;
+  outputColor.r = 0;
+  outputColor.g = 0;
+  outputColor.b = 0;
+  const float3 rotatedRayVec = rotateCamSpaceVec(camSpaceRayVec, dstCamRollDeg, dstCamPitchDeg,
+    dstCamYawDeg);
+  if (rotatedRayVec.z >= 0.f) {
+      const float2 srcImagePointPx = fisheyeCameraSpaceToImageSpace(rotatedRayVec);
+      if (srcImagePointPx.x >= 0.f && srcImagePointPx.x < srcImageWidthPx
+          && srcImagePointPx.y >= 0.f && srcImagePointPx.y < srcImageHeightPx) {
+        outputColor = rsGetElementAt_uchar4(srcImage, floor(srcImagePointPx.x),
+          floor(srcImagePointPx.y));
       }
-    } else {
-      if (ceil(srcImagePointPx.y) < srcImageHeightPx) {
-        bottomRightColor = bottomLeftColor;
-      } else {
-        bottomRightColor = topLeftColor;
-      }
-    }
-    //outputColor = interpolate(srcImagePointPx, topLeftColor, topRightColor, bottomLeftColor,
-    //    bottomRightColor);
-
-    outputColor = topLeftColor;
-  } else {
-    outputColor.a = 255;
-    outputColor.r = 0;
-    outputColor.g = 0;
-    outputColor.b = 0;
   }
   //uchar4 outputColor = inputColor;
   //outputColor.a = 255;

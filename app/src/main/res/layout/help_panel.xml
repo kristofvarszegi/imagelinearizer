@@ -5,7 +5,8 @@
     android:layout_height="wrap_content"
     android:background="@drawable/view_background"
     android:gravity="center"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:visibility="gone" >
 
     <TextView
         android:id="@+id/textViewHelp"
