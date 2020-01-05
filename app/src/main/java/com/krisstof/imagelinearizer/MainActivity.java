@@ -3,7 +3,6 @@
  * - Measure hfovs
  * - Solve OOM in ITs
  * - Implement ITs
- * - Free: watermark instead of img size limit
  * - Free/Pro with productFlavors {...
  * - Screenshots for Play Store
  * - RELEASE
@@ -81,6 +80,7 @@ import com.google.android.play.core.tasks.OnSuccessListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
@@ -95,6 +95,8 @@ public class MainActivity extends AppCompatActivity {
   private static final int WRITEEXTERNALSTORAGE_REQUESTCODE = 300;
   private static final float SMALLIMAGE_SIZERATIO_LANDSCAPE = 0.3f;
   private static final float SMALLIMAGE_SIZERATIO_PORTRAIT = 0.2f;
+  private static final int[] MAX_IMAGE_SIZES_PX = new int[] {4092, 3600, 3072, 2560, 2048, 1600,
+          1280, 1024, 640};
   //private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_LANDSCAPE = 0.3f;
   //private static final float CAMERAPARAMETERSPANEL_HEIGHT_RATIO_LANDSCAPE = 0.8f;
   private static final float CAMERAPARAMETERSPANEL_WIDTH_RATIO_PORTRAIT = 1.f;
@@ -108,42 +110,30 @@ public class MainActivity extends AppCompatActivity {
   private static final float DSTCAM_PITCH_SPAN_DEG = 180.f;
   private static final float DSTCAM_ROLL_SPAN_DEG = 180.f;
   private static final int PRINCIPALPOINT_SEEKBAR_DECIMALS = 2;
-  private static final float GRIDOVERLAY_THICKLINEWIDTH_PX = 2.f;
+  private static final float GRIDOVERLAY_LINEWIDTH_PX = 2.f;
   private static final int GRIDOVERLAY_CELLCOUNT = 20;
 
-  private static final int MIN_IMAGE_SIZE_PX = 1;
-  private static final int MAX_IMAGE_SIZE_PX = 7680;
   private static final int BASELINE_DISPLAYDENSITY_DP = 160;
   private static final String FLOAT_FORMAT_STR = "%.2f";
 
   enum RELEASE_TYPE {FREE, PRO}
-
-  private static final class ReleaseConfig {
+  private static final class AppConfig {
     RELEASE_TYPE releaseType;
-    int[] maxSavedImageSizePx;
+    int maxImageSizePx;
 
-    ReleaseConfig(RELEASE_TYPE releaseType, final int[] maxSavedImageSizePx) {
-      if (maxSavedImageSizePx.length != 2) {
-        throw new IllegalArgumentException("Max. image size must have 2 elements but it has "
-            + maxSavedImageSizePx.length);
-      }
+    AppConfig(RELEASE_TYPE releaseType, int maxImageSizePx) {
       this.releaseType = releaseType;
-      this.maxSavedImageSizePx = new int[]{maxSavedImageSizePx[0], maxSavedImageSizePx[1]};
+      this.maxImageSizePx = maxImageSizePx;
     }
   }
 
-  private static final ReleaseConfig FREE_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.FREE,
-      new int[]{320, 320});
-  private static final ReleaseConfig PRO_RELEASECONFIG = new ReleaseConfig(RELEASE_TYPE.PRO,
-      new int[]{MAX_IMAGE_SIZE_PX, MAX_IMAGE_SIZE_PX});
-  private static final ReleaseConfig RELEASECONFIG = FREE_RELEASECONFIG;
-  //private static final ReleaseConfig RELEASECONFIG = PRO_RELEASECONFIG;
-
+  private AppConfig mAppConfig;
   private Context mContext;
   private Thread mImageUpdaterThread;
   private Handler mImageUpdaterHandler;
   private Thread mImageSaverThread;
   private Handler mImageSaverHandler;
+  private Semaphore mSemaphore;
   private String mDstImageFilename;
   private boolean mIsHelpVisible;
 
@@ -155,8 +145,10 @@ public class MainActivity extends AppCompatActivity {
   private String mImageSavedNotificationText;
 
   private Bitmap mSrcImage;
+  private Bitmap mSmallSrcImage;
   private FisheyeParameters mSrcCamParameters;
   private Bitmap mDstImage;
+  private Bitmap mDstOverlayImage;
 
   private DstCamParameters mDstCamParameters;
 
@@ -169,23 +161,37 @@ public class MainActivity extends AppCompatActivity {
     return mDstCamParameters;
   }
 
-  Bitmap getDstImage() {
-    final Bitmap finalDstImage = mDstImage;
-    return finalDstImage;
-  }
+  Bitmap getDstImage() { return mDstImage; }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-
     updateApp();
 
-    initAds();
+    final RELEASE_TYPE releaseType = RELEASE_TYPE.FREE;
+    DisplayMetrics displayMetrics = new DisplayMetrics();
+    getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+    final int maxImageSizePx = determineMaxImageSizePxBasedOnAvailableMemory(displayMetrics);
 
-    mContext = getApplicationContext();
-    mImageTransformer = new ImageTransformer(this);
-    mIsHelpVisible = false;
-    initUi();
+    if (maxImageSizePx > 0) {
+      if (maxImageSizePx < MAX_IMAGE_SIZES_PX[0]) {
+        final String maxImageSizeNotificationText = "Max. image size limited to " + maxImageSizePx
+                + " x " + maxImageSizePx + " pixels to fit into available memory";
+        Log.i(TAG, maxImageSizeNotificationText);
+        Toast.makeText(this, maxImageSizeNotificationText, Toast.LENGTH_LONG).show();
+      }
+      mAppConfig = new AppConfig(releaseType, maxImageSizePx);
+      mContext = getApplicationContext();
+      initAds();
+      mImageTransformer = new ImageTransformer(this);
+      mIsHelpVisible = false;
+      initUi();
+      mSemaphore = new Semaphore(1, true);
+      initThreads();
+    } else {
+      handleOutOfMemory("at init");
+      finish();
+    }
   }
 
   @Override
@@ -202,7 +208,10 @@ public class MainActivity extends AppCompatActivity {
   public void onConfigurationChanged(@NonNull Configuration newConfig) {
     Log.d(TAG, "onConfigurationChanged(.)...");
     super.onConfigurationChanged(newConfig);
+    mImageUpdaterHandler = null;
+    mImageUpdaterThread.interrupt();
     initUi();
+    initThreads();
     postRecalculateImagesIfHandlerIsCreated();
   }
 
@@ -242,7 +251,9 @@ public class MainActivity extends AppCompatActivity {
 
     initDstCamUi();
     initHelpPanel();
+  }
 
+  private void initThreads() {
     mDstCamOverlayView.post(new Runnable() {
       @Override
       public void run() {
@@ -323,15 +334,21 @@ public class MainActivity extends AppCompatActivity {
     //final int imageResourceId = R.drawable.ladderboy_180_3025x2235;
     //final int imageResourceId = R.drawable.libraryhallway_195deg_3910x2607;
     //final int imageResourceId = R.drawable.librarytable_195deg_640x427;  // Pp = img center
-    final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
+    final int imageResourceId = R.drawable.librarytable_195deg_1600x1066;  // Pp = img center
+    //final int imageResourceId = R.drawable.librarytable_195deg_2048x1365;  // Pp = img center
+    //final int imageResourceId = R.drawable.librarytable_195deg_3960x2640;  // Pp = img center
     //final int imageResourceId = R.drawable.redcityroad_120deg_3000x2000;  // Pp not img center
     TextView textViewSrcCamTitle = findViewById(R.id.textViewSrcCamTitle);
     textViewSrcCamTitle.setText(getString(R.string.srccam_title));
     if (mSrcImage == null) {
       Log.d(TAG, "Loading sample image...");
-      mSrcImage = BitmapFactory.decodeResource(getResources(),
-          imageResourceId, bitmapFactoryOptions)
-          .copy(Bitmap.Config.ARGB_8888, false);
+      try {
+        mSrcImage = BitmapFactory.decodeResource(getResources(),
+                imageResourceId, bitmapFactoryOptions)
+                .copy(Bitmap.Config.ARGB_8888, false);
+      } catch (OutOfMemoryError ome) {
+        handleOutOfMemory(getResources().getString(R.string.at_loading_sample_image));
+      }
       Log.d(TAG, "Sample image loaded");
       try {
         mSrcCamParameters = new FisheyeParameters(imageResourceId);
@@ -789,7 +806,7 @@ public class MainActivity extends AppCompatActivity {
     if (text.length() > 0) {
       try {
         int newDstImageHeightPx = Integer.parseInt(text);
-        if (newDstImageHeightPx > 0 && newDstImageHeightPx <= MAX_IMAGE_SIZE_PX) {
+        if (newDstImageHeightPx > 0 && newDstImageHeightPx <= mAppConfig.maxImageSizePx) {
           retVal = newDstImageHeightPx;
           Log.d(TAG, "Edit text's number value: " + retVal);
           if (text.charAt(0) == '0') {
@@ -797,16 +814,16 @@ public class MainActivity extends AppCompatActivity {
           }
         } else {
           needToResetText = true;
-          if (newDstImageHeightPx > MAX_IMAGE_SIZE_PX) {
+          if (newDstImageHeightPx > mAppConfig.maxImageSizePx) {
             Toast.makeText(this, "Image width and height can be max. "
-                    + MAX_IMAGE_SIZE_PX + " pixels",
+                    + mAppConfig.maxImageSizePx + " pixels",
                 Toast.LENGTH_LONG).show();
           } else if (!resetTextIfZero) {
             needToResetText = false;
           }
         }
       } catch (NumberFormatException nfe) {
-        Log.d(TAG, Utils.stackTraceToString(nfe));
+        Log.d(TAG, Utils.exceptionToStackTraceString(nfe));
         needToResetText = true;
       }
     } else {
@@ -915,7 +932,7 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void initAds() {
-    if (RELEASECONFIG.releaseType == RELEASE_TYPE.FREE) {
+    if (mAppConfig.releaseType == RELEASE_TYPE.FREE) {
       // TODO If you need to obtain consent from users in the European Economic Area (EEA), set any request-specific flags (such as tagForChildDirectedTreatment or tag_for_under_age_of_consent), or otherwise take action before loading ads, ensure you do so before initializing the Mobile Ads SDK.
       MobileAds.initialize(this, new OnInitializationCompleteListener() {
         @Override
@@ -967,6 +984,25 @@ public class MainActivity extends AppCompatActivity {
   }
 
   @Override
+  protected void onDestroy() {
+    Log.d(TAG, "onDestroy()...");
+    if (mImageUpdaterHandler != null) {
+      mImageUpdaterHandler.removeCallbacksAndMessages(null);
+    }
+    if (mSrcImage != null) {
+      //mSrcImage.recycle();
+      mSrcImage = null;
+      System.gc();
+    }
+    if (mDstImage != null) {
+      //mDstImage.recycle();
+      mDstImage = null;
+      System.gc();
+    }
+    super.onDestroy();
+  }
+
+  @Override
   public void onActivityResult(int requestCode, int resultCode, Intent intent) {
     super.onActivityResult(requestCode, resultCode, intent);
     if (requestCode == UPDATEAPP_REQUESTCODE) {
@@ -981,7 +1017,7 @@ public class MainActivity extends AppCompatActivity {
         final Uri imageUri = intent.getData();
         loadImageWhichTheUserPickedFromGallery(imageUri);
       } catch (Exception e) {
-        Log.e(TAG, Utils.stackTraceToString(e));
+        Log.e(TAG, Utils.exceptionToStackTraceString(e));
       }
     }
   }
@@ -1026,12 +1062,17 @@ public class MainActivity extends AppCompatActivity {
       final Bitmap loadedImage;
       try {
         loadedImage = MediaStore.Images.Media.getBitmap(this.getContentResolver(),
-            imageUri).copy(Bitmap.Config.ARGB_8888, false);
+                imageUri).copy(Bitmap.Config.ARGB_8888, false);
         Log.d(TAG, "loadedImage size in onActivityResult(.): " + loadedImage.getWidth()
-            + "x" + loadedImage.getHeight());
+                + "x" + loadedImage.getHeight());
         if (mSrcImage.getWidth() > 0 && mSrcImage.getHeight() > 0
-            && mSrcImage.getWidth() <= MAX_IMAGE_SIZE_PX
-            && mSrcImage.getHeight() <= MAX_IMAGE_SIZE_PX) {
+                && mSrcImage.getWidth() <= mAppConfig.maxImageSizePx
+                && mSrcImage.getHeight() <= mAppConfig.maxImageSizePx) {
+          if (mSrcImage != null) {
+            //mSrcImage.recycle();
+            mSrcImage = null;
+            System.gc();
+          }
           mSrcImage = loadedImage;
           mSrcCamParameters = new FisheyeParameters(mSrcImage);
           //final float pixelDensity = 1.0f;
@@ -1039,34 +1080,37 @@ public class MainActivity extends AppCompatActivity {
           mDstCamParameters.imageWidthPx = mSrcImage.getWidth();
           mDstCamParameters.imageHeightPx = mSrcImage.getHeight();
           Log.d(TAG, "mDstImageSizePx in onActivityResult(.): "
-              + mDstCamParameters.imageWidthPx + "x" + mDstCamParameters.imageHeightPx);
+                  + mDstCamParameters.imageWidthPx + "x" + mDstCamParameters.imageHeightPx);
           postRecalculateImagesIfHandlerIsCreated();
 
           ((TextView) findViewById(R.id.textViewSrcCamTitle)).setText(srcImageTitle);
           final String srcImageSizeText = mSrcImage.getWidth()
-              + " x " + mSrcImage.getHeight() + " " + getResources().getString(R.string.px);
+                  + " x " + mSrcImage.getHeight() + " " + getResources().getString(R.string.px);
           ((TextView) findViewById(R.id.textViewSrcCamImageSize)).setText(srcImageSizeText);
           SeekBar seekBarSrcCamPrincipalPointXPx = findViewById(R.id.seekBarSrcCamPrincipalPointXPx);
           seekBarSrcCamPrincipalPointXPx.setProgress(
-              valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointXPx,
-                  mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
+                  valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointXPx,
+                          mSrcCamParameters.principalPointXPx, mSrcImage.getWidth()));
           SeekBar seekBarSrcCamPrincipalPointYPx = findViewById(R.id.seekBarSrcCamPrincipalPointYPx);
           seekBarSrcCamPrincipalPointYPx.setProgress(
-              valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
-                  mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
+                  valueScaleToSeekBarScale(seekBarSrcCamPrincipalPointYPx,
+                          mSrcCamParameters.principalPointYPx, mSrcImage.getHeight()));
           ((EditText) findViewById(R.id.editTextDstImageWidthPx)).setText(
-              String.format(Locale.US, "%d", mDstCamParameters.imageWidthPx));
+                  String.format(Locale.US, "%d", mDstCamParameters.imageWidthPx));
           ((EditText) findViewById(R.id.editTextDstImageHeightPx)).setText(
-              String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
+                  String.format(Locale.US, "%d", mDstCamParameters.imageHeightPx));
         } else {
           Toast.makeText(this, "Input image must be max. "
-                  + MAX_IMAGE_SIZE_PX + " x " + MAX_IMAGE_SIZE_PX + " pixels (and min. 1x1 pixels)",
-              Toast.LENGTH_LONG).show();
+                          + mAppConfig.maxImageSizePx + " x " + mAppConfig.maxImageSizePx
+                          + " pixels (and min. 1x1 pixels)",
+                  Toast.LENGTH_LONG).show();
         }
         textViewStatus.setText(getResources().getString(R.string.status));
         textViewStatus.setVisibility(View.INVISIBLE);
+      } catch (OutOfMemoryError ome) {
+        handleOutOfMemory(getResources().getString(R.string.at_loading_imagepickedbyuser));
       } catch (Exception e) {
-        Log.e(TAG, Utils.stackTraceToString(e));
+        Log.e(TAG, Utils.exceptionToStackTraceString(e));
       }
     }
   }
@@ -1113,130 +1157,163 @@ public class MainActivity extends AppCompatActivity {
     return new Runnable() {
       @Override
       public void run() {
-        saveImageToGallery();
+        try {
+          mSemaphore.acquire();
+          saveImageToGallery();
+          mSemaphore.release();
+        } catch (InterruptedException ie) {
+          Log.e(TAG, Utils.exceptionToStackTraceString(ie));
+        }
       }
     };
   }
 
   private void saveImageToGallery() {
-    switch (RELEASECONFIG.releaseType) {
-      case FREE:
-        try {
-          final Bitmap reducedDstImage = Utils.reduceImageToFit(mDstImage,
-              RELEASECONFIG.maxSavedImageSizePx[0], RELEASECONFIG.maxSavedImageSizePx[1]);
-          Utils.saveImageToExternalStorage(this, reducedDstImage, mDstImageFilename);
-          mImageSavedNotificationText = "Image \'" + mDstImageFilename + "\' saved to gallery in "
-              + reducedDstImage.getWidth() + "x"
-              + reducedDstImage.getHeight() + " resolution.\n\n"
-              + getString(R.string.buy_pro_for_high_resolution)
+    try {
+      switch (mAppConfig.releaseType) {
+        case FREE:
+          Utils.saveImageToExternalStorage(this, mDstImage, mDstImageFilename);
+          mImageSavedNotificationText = "Image \'" + mDstImageFilename
+                  + "\' saved to gallery with watermark.\n\n"
+              + getString(R.string.buy_pro_to_remove_watemark)
               + "\n\n" + getResources().getString(R.string.may_take_time_to_appear_in_gallery);
           if (!mIsInterstitialAdOpen) {
             notifyUserThatImageIsSaved();
           }
-        } catch (RuntimeException re) {
-          Toast.makeText(this, re.getMessage(), Toast.LENGTH_LONG).show();
-        }
-        break;
-      case PRO:
-        try {
+          break;
+        case PRO:
           Utils.saveImageToExternalStorage(this, mDstImage, mDstImageFilename);
           mImageSavedNotificationText = "Image \'" + mDstImageFilename + "\' saved to gallery.\n\n"
               + getResources().getString(R.string.may_take_time_to_appear_in_gallery);
           notifyUserThatImageIsSaved();
-        } catch (RuntimeException re) {
-          Toast.makeText(this, re.getMessage(), Toast.LENGTH_LONG).show();
-        }
         break;
+      }
+    } catch (RuntimeException re) {
+        Toast.makeText(this, re.getMessage(), Toast.LENGTH_LONG).show();
     }
   }
 
   void recalculateUpdatedImages() {
-    mDstImage = mImageTransformer.linearize(mSrcImage, mSrcCamParameters, mDstCamParameters);
+    if (mDstImage != null) {
+      //mDstImage.recycle();
+      mDstImage = null;
+      System.gc();
+    }
+    try {
+      mDstImage = mImageTransformer.transform(mSrcImage, mSrcCamParameters, mDstCamParameters);
+      Log.d(TAG, "Image transformed");
+      if (mAppConfig.releaseType == RELEASE_TYPE.FREE) {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        //Log.d(TAG, "Adding watermark to image...");
+        Utils.addWatermark(mDstImage, getResources().getString(
+                R.string.free_version), displayMetrics);
+        //Log.d(TAG, "Added watermark to image");
+      }
+    } catch (OutOfMemoryError ome) {
+      handleOutOfMemory(getResources().getString(R.string.at_transforming_image));
+    } catch (Exception e) {
+      Log.e(TAG, "Failed to update images: " + Utils.exceptionToStackTraceString(e));
+    }
   }
 
   void updateImagesInUi() {
     DisplayMetrics displayMetrics = new DisplayMetrics();
     getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+    if (mSmallSrcImage != null) {
+      //mSmallSrcImage.recycle();
+      mSmallSrcImage = null;
+      System.gc();
+    }
+    int smallSrcImageWidth, smallSrcImageHeight;
     if (displayMetrics.widthPixels <= displayMetrics.heightPixels) {
-      final int srcImageSmallHeight = (int) (SMALLIMAGE_SIZERATIO_PORTRAIT
-          * (float) displayMetrics.heightPixels);
-      mSrcCamView.setImageBitmap(Bitmap.createScaledBitmap(mSrcImage,
-          mSrcImage.getWidth() * srcImageSmallHeight / mSrcImage.getHeight(),
-          srcImageSmallHeight, false));
+      smallSrcImageHeight = (int) (SMALLIMAGE_SIZERATIO_PORTRAIT
+              * (float) displayMetrics.heightPixels);
+      smallSrcImageWidth = mSrcImage.getWidth() * smallSrcImageHeight / mSrcImage.getHeight();
     } else {
-      final int srcImageSmallWidth = (int) (SMALLIMAGE_SIZERATIO_LANDSCAPE
-          * (float) displayMetrics.widthPixels);
-      mSrcCamView.setImageBitmap(Bitmap.createScaledBitmap(mSrcImage, srcImageSmallWidth,
-          mSrcImage.getHeight() * srcImageSmallWidth / mSrcImage.getWidth(), false));
+      smallSrcImageWidth = (int) (SMALLIMAGE_SIZERATIO_LANDSCAPE
+              * (float) displayMetrics.widthPixels);
+      smallSrcImageHeight = mSrcImage.getHeight() * smallSrcImageWidth / mSrcImage.getWidth();
+    }
+    try {
+      mSmallSrcImage = Bitmap.createScaledBitmap(mSrcImage, smallSrcImageWidth,
+              smallSrcImageHeight, false);
+      mSrcCamView.setImageBitmap(mSmallSrcImage);
+    } catch (OutOfMemoryError ome) {
+      handleOutOfMemory(getResources().getString(R.string.at_creating_smallsrcimage));
     }
 
     mDstCamView.setImageBitmap(mDstImage);
-
-    FrameLayout textLayoutAllPortrait = findViewById(R.id.layoutMainContent);
-    if (textLayoutAllPortrait != null) {
-      //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
-      final float dstImageWPerH = (float) mDstImage.getWidth() / (float) mDstImage.getHeight();
-      final float allWPerH = (float) textLayoutAllPortrait.getWidth()
-          / (float) textLayoutAllPortrait.getHeight();
-      ImageView imageViewDstCam = findViewById(R.id.imageViewDstCam);
-      ViewGroup.LayoutParams layoutParams = imageViewDstCam.getLayoutParams();
-      if (dstImageWPerH > allWPerH) {
-        layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-        layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-        //ConstraintLayout.LayoutParams layoutParams =
-        //    (ConstraintLayout.LayoutParams) imageViewDstCam.getLayoutParams();
-        //ConstraintLayout.LayoutParams layoutParams = new ConstraintLayout.LayoutParams(
-        //    ConstraintLayout.LayoutParams.MATCH_PARENT, ConstraintLayout.LayoutParams.WRAP_CONTENT);
-      } else {
-        layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-      }
-      imageViewDstCam.setLayoutParams(layoutParams);
-      //findViewById(R.id.imageViewDstCamOverlay).setLayoutParams(layoutParams);
-      //}
-    } else {
-      Log.d(TAG, "Top-level layout (constraintLayoutAll) is null");
-    }
-
-    if (((Switch) findViewById(R.id.switchDstImageGridOverlay)).isChecked()) {
-      //Log.d(TAG, "  mDstCamView w, h: " + mDstCamView.getWidth() + ", "
-      //    + mDstCamView.getHeight());
-      if (mDstCamView.getWidth() > 0 && mDstCamView.getHeight() > 0) {
-        int gridCellSizePx = Math.max((int) ((float) Math.max(mDstCamView.getWidth(), mDstCamView.getHeight())
-            / (float) GRIDOVERLAY_CELLCOUNT), 2);
-        final int deviceOrientation = Utils.getDeviceOrientation(this);
-        switch (deviceOrientation) {
-          case ORIENTATION_LANDSCAPE:
-            mDstCamOverlayView.setImageBitmap(
-                Utils.createGridOverlayImage((int) ((float) mDstCamView.getHeight()
-                        * (float) mDstImage.getWidth() / (float) mDstImage.getHeight()), mDstCamView.getHeight(),
-                    gridCellSizePx, GRIDOVERLAY_THICKLINEWIDTH_PX,
-                    getResources().getColor(R.color.colorAccent),
-                    getResources().getColor(R.color.colorPrimary)));
-            break;
-          case ORIENTATION_PORTRAIT:
-            //Log.d(TAG, "mDstCamView w, h: " + mDstCamView.getWidth() + ", " + mDstCamView.getHeight());
-            //Log.d(TAG, "mDstImage w, h: " + mDstImage.getWidth() + ", " + mDstImage.getHeight());
-            mDstCamOverlayView.setImageBitmap(
-                Utils.createGridOverlayImage(mDstCamView.getWidth(), (int) ((float) mDstCamView.getWidth()
-                        * (float) mDstImage.getHeight() / (float) mDstImage.getWidth()),
-                    gridCellSizePx, GRIDOVERLAY_THICKLINEWIDTH_PX,
-                    getResources().getColor(R.color.colorAccent),
-                    getResources().getColor(R.color.colorPrimary)));
-            break;
-          default:
-            throw new RuntimeException("Invalid device orientation: " + deviceOrientation);
+      FrameLayout textLayoutAllPortrait = findViewById(R.id.layoutMainContent);
+      if (textLayoutAllPortrait != null) {
+        //if (constraintLayoutAll.getWidth() > 0 && constraintLayoutAll.getHeight() > 0) {
+        final float dstImageWPerH = (float) mDstImage.getWidth() / (float) mDstImage.getHeight();
+        final float allWPerH = (float) textLayoutAllPortrait.getWidth()
+                / (float) textLayoutAllPortrait.getHeight();
+        ImageView imageViewDstCam = findViewById(R.id.imageViewDstCam);
+        ViewGroup.LayoutParams layoutParams = imageViewDstCam.getLayoutParams();
+        if (dstImageWPerH > allWPerH) {
+          layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+          layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        } else {
+          layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+          layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
         }
-
-        mDstCamOverlayView.setVisibility(View.VISIBLE);
+        imageViewDstCam.setLayoutParams(layoutParams);
+      } else {
+        Log.d(TAG, "Top-level layout is null");
       }
-      //Log.d(TAG, "  mDstCamOverlayView w, h: " + mDstCamOverlayView.getWidth() + ", "
-      //    + mDstCamOverlayView.getHeight());
-    } else {
-      findViewById(R.id.imageViewDstCamOverlay).setVisibility(View.INVISIBLE);
-    }
 
-    if (RELEASECONFIG.releaseType == RELEASE_TYPE.FREE) {
+      if (((Switch) findViewById(R.id.switchDstImageGridOverlay)).isChecked()) {
+        //Log.d(TAG, "  mDstCamView w, h: " + mDstCamView.getWidth() + ", "
+        //    + mDstCamView.getHeight());
+        if (mDstCamView.getWidth() > 0 && mDstCamView.getHeight() > 0) {
+          int gridCellSizePx = Math.max((int) ((float) Math.max(mDstCamView.getWidth(), mDstCamView.getHeight())
+                  / (float) GRIDOVERLAY_CELLCOUNT), 2);
+          final int deviceOrientation = Utils.getDeviceOrientation(this);
+          if (mDstOverlayImage != null) {
+            //mDstOverlayImage.recycle();
+            mDstOverlayImage = null;
+            System.gc();
+          }
+          int dstOverlayImageWidth, dstOverlayImageHeight;
+          switch (deviceOrientation) {
+            case ORIENTATION_LANDSCAPE:
+              dstOverlayImageWidth = (int) ((float) mDstCamView.getHeight()
+                      * (float) mDstImage.getWidth() / (float) mDstImage.getHeight());
+              dstOverlayImageHeight = mDstCamView.getHeight();
+              break;
+            case ORIENTATION_PORTRAIT:
+              dstOverlayImageWidth = mDstCamView.getWidth();
+              dstOverlayImageHeight = (int) ((float) mDstCamView.getWidth() * (float) mDstImage.getHeight()
+                      / (float) mDstImage.getWidth());
+              break;
+            default:
+              throw new RuntimeException("Invalid device orientation: " + deviceOrientation);
+          }
+          try {
+            //Log.d(TAG, "Creating grid overlay image...");
+            mDstOverlayImage = Utils.createGridOverlayImage(dstOverlayImageWidth,
+                    dstOverlayImageHeight, gridCellSizePx, GRIDOVERLAY_LINEWIDTH_PX,
+                    getResources().getColor(R.color.colorAccent),
+                    getResources().getColor(R.color.colorPrimary));
+            //Log.d(TAG, "Created grid overlay image");
+            mDstCamOverlayView.setImageBitmap(mDstOverlayImage);
+            mDstCamOverlayView.setVisibility(View.VISIBLE);
+          } catch (OutOfMemoryError ome) {
+            handleOutOfMemory(getResources().getString(R.string.at_creating_dstoverlayimage));
+          } catch (Exception e) {
+            Log.e(TAG, "Failed to create grid overlay image: "
+                    + Utils.exceptionToStackTraceString(e));
+          }
+        }
+        //Log.d(TAG, "  mDstCamOverlayView w, h: " + mDstCamOverlayView.getWidth() + ", "
+        //    + mDstCamOverlayView.getHeight());
+      } else {
+        findViewById(R.id.imageViewDstCamOverlay).setVisibility(View.INVISIBLE);
+      }
+
+    if (mAppConfig.releaseType == RELEASE_TYPE.FREE) {
       ((AdView) findViewById(R.id.adView)).loadAd(new AdRequest.Builder().build());
     }
   }
@@ -1245,8 +1322,18 @@ public class MainActivity extends AppCompatActivity {
     return new Runnable() {
       @Override
       public void run() {
-        recalculateUpdatedImages();
-        runOnUiThread(createUpdateImagesInUiRunnable());
+          try {
+            //Log.d(TAG, "recalculateUpdatedImages acquiring semaphore...");
+            mSemaphore.acquire();
+            //Log.d(TAG, "recalculateUpdatedImages acquired semaphore");
+            recalculateUpdatedImages();
+            runOnUiThread(createUpdateImagesInUiRunnable());
+            //Log.d(TAG, "recalculateUpdatedImages releasing semaphore...");
+            mSemaphore.release();
+            //Log.d(TAG, "recalculateUpdatedImages released semaphore");
+          } catch (InterruptedException ie) {
+            Log.e(TAG, Utils.exceptionToStackTraceString(ie));
+          }
       }
     };
   }
@@ -1255,13 +1342,23 @@ public class MainActivity extends AppCompatActivity {
     return new Runnable() {
       @Override
       public void run() {
-        updateImagesInUi();
+        //Log.d(TAG, "updateImagesInUi trying to acquire semaphore...");
+        if (mSemaphore.tryAcquire()) {
+          //Log.d(TAG, "updateImagesInUi acquired semaphore");
+          updateImagesInUi();
+          //Log.d(TAG, "updateImagesInUi releasing semaphore...");
+          mSemaphore.release();
+          //Log.d(TAG, "updateImagesInUi released semaphore");
+        } /*else {
+          Log.d(TAG, "updateImagesInUi could not acquire semaphore");
+        }*/
       }
     };
   }
 
   private void postRecalculateImagesIfHandlerIsCreated() {
     if (mImageUpdaterHandler != null) {
+      mImageUpdaterHandler.removeCallbacksAndMessages(null);
       mImageUpdaterHandler.post(createRecalculateImagesRunnable());
     }
   }
@@ -1315,7 +1412,7 @@ public class MainActivity extends AppCompatActivity {
                 mAppUpdateManager.startUpdateFlowForResult(appUpdateInfo, AppUpdateType.FLEXIBLE,
                     MainActivity.this, UPDATEAPP_REQUESTCODE);
               } catch (IntentSender.SendIntentException sie) {
-                Log.e(TAG, Utils.stackTraceToString(sie));
+                Log.e(TAG, Utils.exceptionToStackTraceString(sie));
               }
             } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
               askUserToCompleteUpdate();
@@ -1355,5 +1452,47 @@ public class MainActivity extends AppCompatActivity {
     TextView textViewStatus = findViewById(R.id.textViewStatus);
     textViewStatus.setVisibility(View.GONE);
     textViewStatus.setText(getResources().getString(R.string.status));
+  }
+
+  private static int determineMaxImageSizePxBasedOnAvailableMemory(
+          final DisplayMetrics displayMetrics) {
+    Log.i(TAG, Utils.getMemoryUsageInfoText());
+    final int availableHeapSizeMbytes = Utils.getAvailableHeapSizeMbytes();
+    for (int maxImageSize : MAX_IMAGE_SIZES_PX) {
+      final int requiredHeapSizeMbytesForThisImageSize =
+              requiredHeapSizeMbytes(maxImageSize, displayMetrics);
+      Log.i(TAG, "Required memory heap size for image size " + maxImageSize + ": "
+              + requiredHeapSizeMbytesForThisImageSize + " MB");
+      if (availableHeapSizeMbytes >= requiredHeapSizeMbytesForThisImageSize) {
+        Log.i(TAG, "Found max. image size with which app fits into memory: " + maxImageSize);
+        return maxImageSize;
+      }
+    }
+    return -1;
+  }
+
+  private static int requiredHeapSizeMbytes(int maxImageSizePx,
+                                            final DisplayMetrics displayMetrics) {
+    final float justToMakeSureRatio = 1.1f;
+    final float maxSrcImageSizeMbytes = (float) (maxImageSizePx * maxImageSizePx
+            * Utils.SIZEOF_UCHAR4) / (float) (1024 * 1024);
+    final float maxDstImageSizeMbytes = maxSrcImageSizeMbytes;
+    final float maxSmallSrcImageSizeMbytes = (int) (Math.max(SMALLIMAGE_SIZERATIO_LANDSCAPE,
+            SMALLIMAGE_SIZERATIO_PORTRAIT) * (float) maxSrcImageSizeMbytes);
+    final int maxDstOverlayImageSizePx = Math.max(displayMetrics.widthPixels,
+            displayMetrics.heightPixels);
+    final float maxDstOverlayImageSizeMbytes = (float) (maxDstOverlayImageSizePx
+            * maxDstOverlayImageSizePx * Utils.SIZEOF_UCHAR4) / (float) (1024 * 1024);
+    final float allImagesSizeMbytes = maxSrcImageSizeMbytes + maxSmallSrcImageSizeMbytes
+            + maxDstImageSizeMbytes + maxDstOverlayImageSizeMbytes;
+    return (int) Math.ceil(allImagesSizeMbytes * justToMakeSureRatio);
+  }
+
+  private void handleOutOfMemory(final String debugInfoText) {
+    Log.d(TAG, "handleOutOfMemory(.)...");
+    Toast.makeText(this, getResources().getString(R.string.not_enough_free_memory),
+            Toast.LENGTH_LONG).show();
+    Log.e(TAG, getResources().getString(R.string.not_enough_free_memory) + " ("
+            + debugInfoText + ")");
   }
 }

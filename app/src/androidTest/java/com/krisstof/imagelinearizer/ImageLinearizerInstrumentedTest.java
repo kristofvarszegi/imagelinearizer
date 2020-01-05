@@ -154,4 +154,16 @@ public class ImageLinearizerInstrumentedTest {
     public void testAppUpdateProcess() {
         // TODO
     }
+
+    @Ignore("Not implemented yet")
+    @Test
+    public void testStayingAliveOverManySubsequentDeviceOrientationChanges() {
+        // TODO
+    }
+
+    @Ignore("Not implemented yet")
+    @Test
+    public void testStayingAliveOverContinuouslyPullingSeekBar() {
+        // TODO
+    }
 }

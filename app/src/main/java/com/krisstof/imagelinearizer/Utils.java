@@ -8,12 +8,16 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Typeface;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
@@ -30,8 +34,8 @@ import java.util.TimeZone;
 
 abstract class Utils {
   private static final String TAG = Utils.class.getSimpleName();
-
   private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+  static final int SIZEOF_UCHAR4 = 4;
 
   static final String BMP_STR = "bmp";
   static final String JPEG_STR = "jpeg";
@@ -87,7 +91,7 @@ abstract class Utils {
         outFStream.flush();
         outFStream.close();
       } catch (Exception e) {
-        Log.e(TAG, Utils.stackTraceToString(e));
+        Log.e(TAG, Utils.exceptionToStackTraceString(e));
       }
       MediaScannerConnection.scanFile(context, new String[]{imageFile.toString()}, null,
           new MediaScannerConnection.OnScanCompletedListener() {
@@ -121,7 +125,7 @@ abstract class Utils {
     return dateFormat.format(now);
   }
 
-  static String stackTraceToString(Exception exception) {
+  static String exceptionToStackTraceString(Exception exception) {
     StringWriter stringWriter = new StringWriter();
     exception.printStackTrace(new PrintWriter(stringWriter));
     return stringWriter.toString();
@@ -185,13 +189,57 @@ abstract class Utils {
     return gridOverlayImage;
   }
 
+  static int spToPx(float sp, final DisplayMetrics displayMetrics) {
+    return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, displayMetrics);
+  }
+
+  static void addWatermark(Bitmap image, final String watermarkText,
+                           final DisplayMetrics displayMetrics) {
+    final float textSizeSp = (float) image.getHeight() * 36.f / 1365.f;
+    //final int textSizePx = spToPx(textSizeSp, displayMetrics);
+    Canvas canvas = new Canvas(image);
+    Paint paint = new Paint();
+    paint.setColor(Color.argb(127, 255, 255, 255));
+    paint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+    paint.setTextSize(textSizeSp);
+    paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
+    final float textLengthSp = paint.measureText(watermarkText);
+    canvas.drawBitmap(image, 0, 0, paint);
+    for (float x = textSizeSp * 2.f; x < image.getWidth(); x += textLengthSp + textSizeSp * 4.f) {
+      for (float y = textSizeSp * 3.f; y < image.getHeight(); y += textSizeSp * 5.f) {
+        canvas.drawText(watermarkText, x, y, paint);
+      }
+    }
+  }
+
   static void hideKeyboard(View view, Context context) {
     try {
       InputMethodManager imm = (InputMethodManager) context.getSystemService(
           Activity.INPUT_METHOD_SERVICE);
       imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     } catch (NullPointerException npe) {
-      Log.e(TAG, stackTraceToString(npe));
+      Log.e(TAG, exceptionToStackTraceString(npe));
     }
+  }
+
+  static String getMemoryUsageInfoText() {
+    final Runtime runtime = Runtime.getRuntime();
+    final long usedMemInMB = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+    final long maxHeapSizeInMB = runtime.maxMemory() / 1048576L;
+    final long availHeapSizeInMB = maxHeapSizeInMB - usedMemInMB;
+    StringBuilder buf = new StringBuilder();
+    buf.append("Memory usage:");
+    buf.append("\n  Max. heap size: ").append(maxHeapSizeInMB).append(" MB");
+    buf.append("\n  Used:           ").append(usedMemInMB).append(" MB");
+    buf.append("\n  Available:      ").append(availHeapSizeInMB).append(" MB");
+    return buf.toString();
+  }
+
+  static int getAvailableHeapSizeMbytes() {
+    final Runtime runtime = Runtime.getRuntime();
+    final long usedMemInMB = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+    final long maxHeapSizeInMB = runtime.maxMemory() / 1048576L;
+    final long availHeapSizeInMB = maxHeapSizeInMB - usedMemInMB;
+    return (int) availHeapSizeInMB;
   }
 }

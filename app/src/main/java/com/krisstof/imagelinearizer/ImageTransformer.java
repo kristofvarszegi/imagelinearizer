@@ -19,7 +19,7 @@ final class ImageTransformer {
     mLinearizeScript = new ScriptC_linearize(mRenderScript);
   }
 
-  Bitmap linearize(final Bitmap srcImage, final FisheyeParameters srcCamParameters,
+  Bitmap transform(final Bitmap srcImage, final FisheyeParameters srcCamParameters,
                    final DstCamParameters dstCamParameters) {
     /*Log.d(TAG, "Linearization parameters:");
     Log.d(TAG, srcCamParameters.toString());
@@ -55,13 +55,7 @@ final class ImageTransformer {
     mLinearizeScript.forEach_linearize(dstImageAllocation);
     Bitmap dstImage = Bitmap.createBitmap(dstCamParameters.imageWidthPx,
         dstCamParameters.imageHeightPx, Bitmap.Config.ARGB_8888);
-    Log.d(TAG, "dstCamParameters: " + dstCamParameters.toString());
-    Log.d(TAG, "dstImage size: " + dstImage.getWidth() + ", " + dstImage.getHeight());
     dstImageAllocation.copyTo(dstImage);
-    /*if (dstCamParameters.imageWidthPx != srcImage.getWidth()
-        || dstCamParameters.imageHeightPx != srcImage.getHeight()) {
-    }*/
-    //Log.d(TAG, "dstImage density: " + dstImage.getDensity());
     return dstImage;
   }
 }

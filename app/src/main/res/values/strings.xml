@@ -14,6 +14,12 @@
     <string name="help">Help</string>
     <string name="help_content">1.1. Set the original camera\'s horizontal angle of view to the horizontal angle of view which is contained in the original image. You can get a hint for this from the distortion of the shapes in the scene or from the specifications of the lens of the original camera.\n\n1.2. Set the original camera\'s focal offset to a value by which lines which are straight in the scene (e.g. poles, window frame sections) appear straight on the desired \'Linear\' camera\'s image.\n\n1.3. (Optional, with \'Advanced parameters\' enabled) If the original image\'s optical center (the point where the original camera\'s optical axis goes through the image) differs from the center of the original image (the point at the image\'s half width and half height), set the position of the original camera\'s optical center to the correct position. This may be needed because in cameras the optical axis of the lens is not aligned with the image sensor\'s center perfectly, and in some cases this misalignment is significant (more than 3 pixels). This adjustment may also be needed if the original image has been obtained by cropping an area from a larger image, where the cropped area was not aligned with the center of that larger image.\n\n2.1. Choose the desired camera\'s geometry:\n - \'Linear\': Perspective projection with no distortion (like an ideal camera with a lens which has no distortion at all)\n - Panoramic: Spherical projection (like the way the map of the Earth is usually projected onto a flat poster)\n\n2.2. Set the desired camera\'s horizontal angle of view to the horizontal angle of view which you would like to be contained in the desired image. \n\n2.3. Set the desired image size to the size in which you would like to have the projected image.\n\n2.4. (Optional, with \'Advanced parameters\' enabled) If you would like the desired image to show a view towards a different direction than the direction of the original camera\'s optical axis, set the desired rotation angles according to how much you would like the desired viewing direction to deviate from the original camera\'s viewing direction. (E.g. you can make the desired camera look 45° to the right.) \n\n\nTerminology:\n - Original camera: The camera with which the image was captured.\n - Desired camera: A logical camera to which you would like the image to be projected.</string>
     <string name="advanced">Advanced</string>
+    <string name="not_enough_free_memory">Not enough free memory for running the app</string>
+    <string name="at_loading_sample_image">at loading sample image</string>
+    <string name="at_transforming_image">at transforming image</string>
+    <string name="at_creating_smallsrcimage">at creating small src image</string>
+    <string name="at_loading_imagepickedbyuser">at loading image picked by user</string>
+    <string name="at_creating_dstoverlayimage">at creating dst overlay image</string>
     <string name="srccam_characteristics">Original camera\'s characteristics</string>
     <string name="srccam_hfovdeg_label">Horiz. angle of view contained in the orig. image</string>
     <string name="srccam_focaloffset_label">Focal offset</string>
@@ -41,5 +47,6 @@
     <string name="y">y</string>
     <string name="close">Close</string>
     <string name="other">Other</string>
-    <string name="buy_pro_for_high_resolution">Buy the Pro version for saving high resolution images;) (Coming soon)</string>
+    <string name="free_version">FREE VERSION</string>
+    <string name="buy_pro_to_remove_watemark">Buy the Pro version to remove this watermark;) (Pro version coming soon)</string>
 </resources>
