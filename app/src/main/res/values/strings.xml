@@ -32,8 +32,8 @@
     <string name="setting_dstcam_geometry">Setting desired camera\'s geometry&#8230;</string>
     <string name="dstcam_hfovdeg_label">Horiz. angle of view</string>
     <string name="dstcam_imgsize_label">Image size:&#032;</string>
-    <string name="dstcam_pitchdeg_label">Rotation around original camera\'s vertical axis</string>
-    <string name="dstcam_yawdeg_label">Rotation around original camera\'s horizontal axis</string>
+    <string name="dstcam_pitchdeg_label">Rotation around original camera\'s horizontal axis</string>
+    <string name="dstcam_yawdeg_label">Rotation around original camera\'s vertical axis</string>
     <string name="dstcam_rolldeg_label">Rotation around desired camera\'s optical axis</string>
     <string name="advancedparametersswitch">Advanced parameters</string>
     <string name="dstimagegridoverlayswitch">Grid overlay</string>
